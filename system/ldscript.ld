@@ -22,6 +22,14 @@ SECTIONS
     }
     __NVMSYMBOL__DRIVER_END = .;
 
+    __NVMSYMBOL_BOOTSTACK_BEGIN =.;
+    .bootstack : {
+        . = ALIGN(0x8);
+        . += 0x500; /* 1MB */
+        __bootstack_top = .;
+    }
+    __NVMSYMBOL_BOOTSTACK_END =.;
+
     __NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN = .;
     .init_array     :
     {
@@ -66,7 +74,7 @@ SECTIONS
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {
         . = ALIGN(0x8);
-        . += 0x1000; /* 1MB */
+        . += 0x500; /* 1MB */
         __stack_top = .;
     }
     __NVMSYMBOL__APPLICATION_STACK_END = .;

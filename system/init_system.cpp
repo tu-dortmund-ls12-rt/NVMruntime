@@ -2,8 +2,6 @@
 
 extern void app_init();
 
-char __bootstack[0x1000];
-
 /**
  * This function is called by the assmebler bootcode
  */
