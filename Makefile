@@ -2,8 +2,8 @@ CROSS_COMPILER=aarch64-linux-gnu
 GEM5_PATH=/home/christian/repos/gem5
 NVMAIN_PATH=/home/christian/repos/nvmain
 
-CCFLAGS=-Wall -Werror -nostdlib -I.
-LDFLAGS=-T system/ldscript.ld -nostdlib -static -nostartfiles -N
+CCFLAGS=-Wall -Werror -nostdlib -I. -mstrict-align
+LDFLAGS=-T system/ldscript.ld -nostdlib -static -nostartfiles -N -mstrict-align
 
 MODULES=system application
 BUILD_DIR=build
@@ -54,7 +54,7 @@ run:
 	@echo "this is just a fake iso that gem5 needs in order to start correctly" >> $(BUILD_DIR)/fake.iso
 	@echo "this is just a fake iso that gem5 needs in order to start correctly" >> $(BUILD_DIR)/fake.iso
 	@echo "this is just a fake iso that gem5 needs in order to start correctly" >> $(BUILD_DIR)/fake.iso
-	@$(GEM5_PATH)/build/ARM/gem5.fast $(GEM5_PATH)/configs/example/fs.py --bare-metal --disk-image=$(abspath ./$(BUILD_DIR)/fake.iso) --kernel=$(abspath ./$(TARGET_APP).elf) --mem-type=NVMainMemory --nvmain-config=$(NVMAIN_PATH)/Config/printtrace.config --cpu-type=DerivO3CPU --machine-type=VExpress_GEM5_V2 --caches --l2cache --l1i_size='32kB' --l1d_size='32kB' --l2_size='1MB' --dtb-filename=none --mem-size=2GB
+	@$(GEM5_PATH)/build/ARM/gem5.fast $(GEM5_PATH)/configs/example/fs.py --bare-metal --disk-image=$(abspath ./$(BUILD_DIR)/fake.iso) --kernel=$(abspath ./$(TARGET_APP).elf) --mem-type=NVMainMemory --nvmain-config=$(NVMAIN_PATH)/Config/printtrace.config --cpu-type=DerivO3CPU --machine-type=VExpress_GEM5_V2 --caches --l2cache --l1i_size='32kB' --l1d_size='32kB' --l2_size='1MB' --dtb-filename=none --mem-size=4GB
 	@rm $(BUILD_DIR)/fake.iso
 	@mv $(NVMAIN_PATH)/Config/nvmain.nvt $(BUILD_DIR)/trace.nvt
 
