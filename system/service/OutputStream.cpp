@@ -121,6 +121,10 @@ OutputStream& OutputStream::operator<<(int64_t number) {
     return *this << plot_int(number, array);
 }
 
+OutputStream& OutputStream::operator<<(void* ptr) {
+    return *this << hex << ((uintptr_t)ptr);
+}
+
 OutputStream& OutputStream::operator<<(
     OutputStream& (*manipulator)(OutputStream& other)) {
     return manipulator(*this);

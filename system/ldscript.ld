@@ -66,6 +66,8 @@ SECTIONS
 
     .note : {
         *(".note.*")
+        *(.eh_frame)
+        *(.rodata)
     }
 
     __NVMSYMBOL__APPLICATION_BSS_BEGIN = .;
@@ -74,10 +76,12 @@ SECTIONS
     }
     __NVMSYMBOL__APPLICATION_BSS_END = .;
 
+    . = ALIGN(0x40);
+
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {
         . = ALIGN(0x8);
-        . += 0x1000; /* 1MB */
+        . += 0x100000; /* 1MB */
         __stack_top = .;
     }
     __NVMSYMBOL__APPLICATION_STACK_END = .;

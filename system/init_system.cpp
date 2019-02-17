@@ -28,7 +28,7 @@ extern "C" void init_system_c() {
 
         if ((uint64_t)actual - (uint64_t)last_dot > bss_size / 10) {
             last_dot = actual;
-            //OutputStream::instance << ".";
+            OutputStream::instance << ".";
         }
     }
     OutputStream::instance << "\n";

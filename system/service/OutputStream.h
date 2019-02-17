@@ -27,6 +27,8 @@ class OutputStream {
     OutputStream& operator<<(int32_t number);
     OutputStream& operator<<(int64_t number);
 
+    OutputStream& operator<<(void *ptr);
+
     OutputStream& operator<<(OutputStream& (*manipulator)(OutputStream& other));
 };
 

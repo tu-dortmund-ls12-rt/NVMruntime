@@ -3,33 +3,29 @@
 
 void quick_sort(uint8_t *begin, uint8_t *end);
 
-//Some data inside BSS
+// Some data inside BSS
 uint64_t bss_filler[256];
 
 void app_init() {
-    for (uint32_t i = 0; i < 10; i++) {
-        log(random_number[i]);
-    }
-    log_info("Sorting 10 numbers");
-    //quick_sort(random_number, random_number + 10);
-    for (uint32_t i = 0; i < 10; i++) {
+    log("Starting to sort " << array_size << " numbers");
+    quick_sort(random_number, random_number + array_size);
+    for (uint32_t i = 0; i < array_size; i++) {
         log(random_number[i]);
     }
 }
 
 void quick_sort(uint8_t *begin, uint8_t *end) {
-    if (begin + 1 == end) {
+    if (begin + 2 >= end) {
         return;
     }
-    uint64_t pivot_index = (((uint64_t)end) - ((uint64_t)begin)) / 2;
-    uint8_t pivot_element = begin[pivot_index];
+    uint8_t *pivot_element = end - 1;
 
     uint8_t *li = begin;
     uint8_t *ri = end - 1;
 
     while (li < ri) {
-        while (li < end - 1 && *li < pivot_element) li++;
-        while (ri > begin && *ri >= pivot_element) ri--;
+        while (li < end - 2 && *li < *pivot_element) li++;
+        while (ri > begin && *ri >= *pivot_element) ri--;
 
         if (li < ri) {
             uint8_t buffer = *li;
@@ -38,12 +34,12 @@ void quick_sort(uint8_t *begin, uint8_t *end) {
         }
     }
 
-    if (*li > pivot_element) {
+    if (*li > *pivot_element) {
         uint8_t buffer = *li;
-        *li = begin[pivot_index];
-        begin[pivot_index] = buffer;
+        *li = *pivot_element;
+        *pivot_element = buffer;
     }
 
-    quick_sort(begin, li - 1);
-    quick_sort(li, end);
+    quick_sort(begin, li);
+    quick_sort(li + 1, end);
 }
