@@ -4,14 +4,11 @@
 void quick_sort(uint8_t *begin, uint8_t *end);
 
 // Some data inside BSS
-uint64_t bss_filler[256];
+uint64_t bss_filler[1];
 
 void app_init() {
-    log("Starting to sort " << array_size << " numbers");
+    // log("Starting to sort " << array_size << " numbers");
     quick_sort(random_number, random_number + array_size);
-    for (uint32_t i = 0; i < array_size; i++) {
-        log(random_number[i]);
-    }
 }
 
 void quick_sort(uint8_t *begin, uint8_t *end) {

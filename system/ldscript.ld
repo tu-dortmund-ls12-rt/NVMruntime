@@ -25,7 +25,7 @@ SECTIONS
     __NVMSYMBOL_BOOTSTACK_BEGIN =.;
     .bootstack : {
         . = ALIGN(0x8);
-        . += 0x1000; /* 1MB */
+        . += 0x200; /* 1MB */
         __bootstack_top = .;
     }
     __NVMSYMBOL_BOOTSTACK_END =.;
@@ -81,7 +81,7 @@ SECTIONS
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {
         . = ALIGN(0x8);
-        . += 0x100000; /* 1MB */
+        . += 0x800; /* 1MB */
         __stack_top = .;
     }
     __NVMSYMBOL__APPLICATION_STACK_END = .;
