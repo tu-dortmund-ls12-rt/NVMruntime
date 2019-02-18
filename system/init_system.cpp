@@ -15,6 +15,17 @@ extern "C" void init_system_c() {
     }
     log("Called init arrays, welcome!");
 
+    // Determine the running exception level
+    uint64_t current_el_value = 0;
+    asm volatile("mrs %0, currentel" : "=r"(current_el_value));
+    log("Running on Excpetion Level " << (current_el_value >> 2));
+
+    // Determine number of available performance counters
+    uint64_t hdcr_value = 5;
+    asm volatile("mrs %0, pmcr_el0" : "=r"(hdcr_value));
+    log("Available performance counters: "
+        << dec << ((hdcr_value & (0b11111 << 11)) >> 11));
+
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_END;
@@ -45,6 +56,6 @@ extern "C" void init_system_c() {
         "add sp, sp, #8;"
         "ldr x1, [sp, #0];"
         "mov sp, x1;" ::"r"(&app_init)
-            : "x0", "x1");
+        : "x0", "x1");
     log("App returned, exiting. Bye");
 }

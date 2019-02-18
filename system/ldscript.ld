@@ -25,7 +25,7 @@ SECTIONS
     __NVMSYMBOL_BOOTSTACK_BEGIN =.;
     .bootstack : {
         . = ALIGN(0x8);
-        . += 0x200; /* 1MB */
+        . += 0x1000; /* 1MB */
         __bootstack_top = .;
     }
     __NVMSYMBOL_BOOTSTACK_END =.;
@@ -70,18 +70,20 @@ SECTIONS
         *(.rodata)
     }
 
+    . += 0x8;
+
     __NVMSYMBOL__APPLICATION_BSS_BEGIN = .;
     .bss : {
         *(.bss)
     }
     __NVMSYMBOL__APPLICATION_BSS_END = .;
-
+    
     . = ALIGN(0x40);
 
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {
         . = ALIGN(0x8);
-        . += 0x800; /* 1MB */
+        . += 0x1000; /* 1MB */
         __stack_top = .;
     }
     __NVMSYMBOL__APPLICATION_STACK_END = .;
