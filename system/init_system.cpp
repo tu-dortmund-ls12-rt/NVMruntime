@@ -1,3 +1,4 @@
+#include "driver/PMC.h"
 #include "system/service/logger.h"
 
 extern void app_init();
@@ -21,10 +22,24 @@ extern "C" void init_system_c() {
     log("Running on Excpetion Level " << (current_el_value >> 2));
 
     // Determine number of available performance counters
-    uint64_t hdcr_value = 5;
-    asm volatile("mrs %0, pmcr_el0" : "=r"(hdcr_value));
-    log("Available performance counters: "
-        << dec << ((hdcr_value & (0b11111 << 11)) >> 11));
+    uint64_t num_counter = PMC::instance.get_num_available_counters();
+    log("Available performance counters: " << num_counter);
+
+    // Test counters
+    PMC::instance.set_counters_enabled(true);
+    PMC::instance.set_event_counter_enabled(0, true);
+    PMC::instance.set_count_event(0, PMC::BUS_ACCESS_STORE);
+    PMC::instance.set_el1_counting(0, true);
+    PMC::instance.set_non_secure_el1_counting(0, true);
+    PMC::instance.write_event_counter(0, 0);
+
+    volatile uint64_t x = 0;
+    for (volatile uint64_t i = 0; i < 2048; i++) {
+        x += i;
+    }
+    PMC::instance.set_event_counter_enabled(0, false);
+    uint32_t count = PMC::instance.read_event_counter(0);
+    log("Counted in 0: " << count);
 
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
