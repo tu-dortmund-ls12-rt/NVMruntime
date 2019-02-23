@@ -233,3 +233,17 @@ void PMC::set_el1_counting(uint64_t counter_num, bool enabled) {
     }
     log_error("Cannot access counter number " << counter_num);
 }
+
+void PMC::enable_overflow_interrupt(uint64_t counter_num, bool enabled) {
+    if (!enabled) {
+        uint64_t pmintenclr = 5;
+        asm volatile("mrs %0, pmintenclr_el1" : "=r"(pmintenclr));
+        pmintenclr |= (0b1 << counter_num);
+        asm volatile("msr pmintenclr_el1, %0" ::"r"(pmintenclr));
+    } else {
+        uint64_t pmintenset = 5;
+        asm volatile("mrs %0, pmintenset_el1" : "=r"(pmintenset));
+        pmintenset |= (0b1 << counter_num);
+        asm volatile("msr pmintenset_el1, %0" ::"r"(pmintenset));
+    }
+}

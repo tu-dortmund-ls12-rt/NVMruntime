@@ -24,6 +24,8 @@ class PMC {
     void set_el0_counting(uint64_t counter_num, bool enabled);
     void set_el1_counting(uint64_t counter_num, bool enabled);
 
+    void enable_overflow_interrupt(uint64_t counter_num, bool enabled);
+
     enum event_values { BUS_ACCESS_STORE = 0x61 , BUS_ACCESS=0x19, CPU_CYCLES=0x11};
 };
 

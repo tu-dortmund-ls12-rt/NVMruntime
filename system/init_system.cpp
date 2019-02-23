@@ -1,5 +1,9 @@
+#include "driver/GIC.h"
 #include "driver/PMC.h"
 #include "system/service/logger.h"
+
+GIC400_Distributor gic_distributor;
+GIC400_CPU gic_cpu;
 
 extern void app_init();
 
@@ -21,9 +25,18 @@ extern "C" void init_system_c() {
     asm volatile("mrs %0, currentel" : "=r"(current_el_value));
     log("Running on Excpetion Level " << (current_el_value >> 2));
 
+    gic_distributor.initialize();
+    gic_cpu.initialize();
+    gic_cpu.setPriotityMask(0xFF);
+
+    // Enable CPU Interrupts
+    asm volatile("msr daifclr, #0b1011");
+
     // Determine number of available performance counters
     uint64_t num_counter = PMC::instance.get_num_available_counters();
     log("Available performance counters: " << num_counter);
+
+    log("IRQ 320 enabled: " << (int)(gic_distributor.interruprActive(320)));
 
     // Test counters
     PMC::instance.set_counters_enabled(true);
@@ -31,7 +44,9 @@ extern "C" void init_system_c() {
     PMC::instance.set_count_event(0, PMC::BUS_ACCESS_STORE);
     PMC::instance.set_el1_counting(0, true);
     PMC::instance.set_non_secure_el1_counting(0, true);
-    PMC::instance.write_event_counter(0, 0);
+    PMC::instance.enable_overflow_interrupt(0, true);
+    gic_distributor.maskInterrupt(320, false);
+    PMC::instance.write_event_counter(0, UINT32_MAX - 100);
 
     volatile uint64_t x = 0;
     for (volatile uint64_t i = 0; i < 2048; i++) {
@@ -40,6 +55,8 @@ extern "C" void init_system_c() {
     PMC::instance.set_event_counter_enabled(0, false);
     uint32_t count = PMC::instance.read_event_counter(0);
     log("Counted in 0: " << count);
+
+    log("IRQ 320 enabled: " << (int)(gic_distributor.interruprActive(320)));
 
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
