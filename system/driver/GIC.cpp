@@ -18,10 +18,9 @@ void GIC400_Distributor::initialize() {
 
     itLineNumber = (*gicd_typer) & 0xF;
 
-    log("GIC Implements " << dec << (int)(itLineNumber + 1) << " Lines at "
-                          << (void *)gicd_typer);
+    log("GIC Implements " << dec << (int)(itLineNumber + 1) << " Lines");
 
-    log("GICD ID: " << hex << *gicd_iidr << " at " << (void *)gicd_iidr);
+    log("GICD ID: " << hex << *gicd_iidr);
 
     // Set all interrupt prioritys to 0
     for (uint32_t i = 0; i < 8 * (itLineNumber + 1); i++) {
@@ -164,7 +163,7 @@ uint16_t GIC400_CPU::raedSignalledInterruptNumber() {
 void GIC400_CPU::signalEndOfInterrupt(uint16_t irq_number) {
     uint32_t reg_value = 0;
     //[ICC_EOIR0_EL1]
-    asm volatile("mrs %0, S3_0_C12_C8_1" : "=r"(reg_value));
+    // asm volatile("mrs %0, S3_0_C12_C8_1" : "=r"(reg_value));
     reg_value |= irq_number;
     asm volatile("msr S3_0_C12_C8_1, %0" ::"r"(reg_value));
 }
@@ -173,7 +172,6 @@ void GIC400_CPU::setPriotityMask(uint8_t highest_prio){
     uint32_t reg_value = 0;
     //[ICC_PMR_EL1]
     asm volatile("mrs %0, S3_0_C4_C6_0" : "=r"(reg_value));
-    log("Prio Mask " << dec << reg_value);
     reg_value |= highest_prio;
     asm volatile("msr S3_0_C4_C6_0, %0" ::"r"(reg_value));
 }

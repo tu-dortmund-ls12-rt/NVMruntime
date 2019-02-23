@@ -1,4 +1,5 @@
 #include "driver/GIC.h"
+#include "driver/GIC_Interrupts.h"
 #include "driver/PMC.h"
 #include "system/service/logger.h"
 
@@ -28,15 +29,18 @@ extern "C" void init_system_c() {
     gic_distributor.initialize();
     gic_cpu.initialize();
     gic_cpu.setPriotityMask(0xFF);
+    GIC_Interrupts::instance.enable(&gic_cpu);
 
     // Enable CPU Interrupts
-    asm volatile("msr daifclr, #0b1011");
+    uint64_t spsr_el1;
+    asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
+    spsr_el1 |= 0b1;  // Use current sp for exceptions
+    asm volatile("msr spsr_el1, %0" ::"r"(spsr_el1));
+    asm volatile("msr daifclr, #0b1111");
 
     // Determine number of available performance counters
     uint64_t num_counter = PMC::instance.get_num_available_counters();
     log("Available performance counters: " << num_counter);
-
-    log("IRQ 320 enabled: " << (int)(gic_distributor.interruprActive(320)));
 
     // Test counters
     PMC::instance.set_counters_enabled(true);
@@ -55,8 +59,6 @@ extern "C" void init_system_c() {
     PMC::instance.set_event_counter_enabled(0, false);
     uint32_t count = PMC::instance.read_event_counter(0);
     log("Counted in 0: " << count);
-
-    log("IRQ 320 enabled: " << (int)(gic_distributor.interruprActive(320)));
 
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
