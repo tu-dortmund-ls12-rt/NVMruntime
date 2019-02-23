@@ -1,6 +1,7 @@
 #include "driver/GIC.h"
 #include "driver/GIC_Interrupts.h"
 #include "driver/PMC.h"
+#include "memory/MMU.h"
 #include "system/service/logger.h"
 
 GIC400_Distributor gic_distributor;
@@ -56,6 +57,13 @@ extern "C" void init_system_c() {
     }
     OutputStream::instance << "\n";
     log("Cleared the BSS");
+
+    MMU::instance.clean_and_disable_caches();
+    log("Cleaned and disabled caches");
+    // MMU::instance.setup_pagetables();
+    log("Setup pagetables");
+    // MMU::instance.activate_mmu();
+    log("MMU Active");
 
     // Determine number of available performance counters
     uint64_t num_counter = PMC::instance.get_num_available_counters();

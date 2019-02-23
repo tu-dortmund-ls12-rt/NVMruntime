@@ -28,6 +28,10 @@ SECTIONS
         build/system/driver/GIC_Interrupts.o(.data)
         build/system/driver/GIC_Interrupts.o(.bss)
 
+        build/system/memory/MMU.o(.text)
+        build/system/memory/MMU.o(.data)
+        build/system/memory/MMU.o(.bss)
+
         build/system/interrupt.o(*)
         build/system/irq_handler.o(*)
 
