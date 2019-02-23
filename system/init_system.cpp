@@ -38,28 +38,6 @@ extern "C" void init_system_c() {
     asm volatile("msr spsr_el1, %0" ::"r"(spsr_el1));
     asm volatile("msr daifclr, #0b1111");
 
-    // Determine number of available performance counters
-    uint64_t num_counter = PMC::instance.get_num_available_counters();
-    log("Available performance counters: " << num_counter);
-
-    // Test counters
-    PMC::instance.set_counters_enabled(true);
-    PMC::instance.set_event_counter_enabled(0, true);
-    PMC::instance.set_count_event(0, PMC::BUS_ACCESS_STORE);
-    PMC::instance.set_el1_counting(0, true);
-    PMC::instance.set_non_secure_el1_counting(0, true);
-    PMC::instance.enable_overflow_interrupt(0, true);
-    gic_distributor.maskInterrupt(320, false);
-    PMC::instance.write_event_counter(0, UINT32_MAX - 100);
-
-    volatile uint64_t x = 0;
-    for (volatile uint64_t i = 0; i < 2048; i++) {
-        x += i;
-    }
-    PMC::instance.set_event_counter_enabled(0, false);
-    uint32_t count = PMC::instance.read_event_counter(0);
-    log("Counted in 0: " << count);
-
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_END;
@@ -78,6 +56,28 @@ extern "C" void init_system_c() {
     }
     OutputStream::instance << "\n";
     log("Cleared the BSS");
+
+    // Determine number of available performance counters
+    uint64_t num_counter = PMC::instance.get_num_available_counters();
+    log("Available performance counters: " << num_counter);
+
+    // Test counters
+    PMC::instance.set_counters_enabled(true);
+    PMC::instance.set_event_counter_enabled(0, true);
+    PMC::instance.set_count_event(0, PMC::BUS_ACCESS_STORE);
+    PMC::instance.set_el1_counting(0, true);
+    PMC::instance.set_non_secure_el1_counting(0, true);
+    PMC::instance.enable_overflow_interrupt(0, true);
+    gic_distributor.maskInterrupt(320, false);
+    PMC::instance.write_event_counter(0, UINT32_MAX - 1000);
+
+    volatile uint64_t x = 0;
+    for (volatile uint64_t i = 0; i < 2048; i++) {
+        x += i;
+    }
+    PMC::instance.set_event_counter_enabled(0, false);
+    uint32_t count = PMC::instance.read_event_counter(0);
+    log("Counted in 0: " << count);
 
     log("Calling target app (with swapped stack pointer)");
     asm volatile(

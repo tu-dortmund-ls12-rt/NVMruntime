@@ -19,11 +19,14 @@ SECTIONS
         build/system/service/OutputStream.o(.bss)
         build/system/driver/GIC.o(.text)
         build/system/driver/GIC.o(.data)
+        build/system/driver/GIC.o(.bss)
         build/system/driver/PMC.o(.text)
         build/system/driver/PMC.o(.data)
+        build/system/driver/PMC.o(.bss)
 
         build/system/driver/GIC_Interrupts.o(.text)
         build/system/driver/GIC_Interrupts.o(.data)
+        build/system/driver/GIC_Interrupts.o(.bss)
 
         build/system/interrupt.o(*)
         build/system/irq_handler.o(*)
