@@ -84,7 +84,7 @@ void MMU::setup_pagetables() {
     log("Setting UP Level 2 Table");
     // First 2 GB of Level 2 Table are device memory blocks
     for (uint64_t i = 0; i < 1024; i++) {
-        level2_table[i] = (0b01) | (i * 0x200000) | (0b0111010000 << 2);
+        level2_table[i] = (0b01) | (i * 0x200000) | (0b100001000 << 2);
         if (i % 51 == 0) {
             OutputStream::instance << ".";
         }
