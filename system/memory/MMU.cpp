@@ -26,7 +26,7 @@ uint64_t level1_table[6] __attribute__((aligned(4096)));
  * =>2048 Entry -- 4GB
  * L2 Table begins at 2GB Boundary
  */
-uint64_t level2_table[2048] __attribute__((aligned(4096)));
+uint64_t level2_table[4096] __attribute__((aligned(4096)));
 
 /**
  * Level 3 Table controls 4kb memory each
@@ -44,9 +44,16 @@ void MMU::setup_pagetables() {
      */
 
     // Set granularity to 4KB
-    uint64_t tcr = 0;
-    asm volatile("mrs %0, tcr_el1" : "=r"(tcr));
-    tcr &= ~(0b11 << 14);
+    uint64_t tcr = 0UL;
+    tcr |= (0b001UL << 32);  // 36 Address Bits
+    tcr |= (0b10UL << 30);   // 4KB Granule for TTBR1
+    tcr |= (0b01UL << 26);   // Outer WB, allocate for TTBR1
+    tcr |= (0b01UL << 24);   // Inner WB, allocate for TTBR1
+    tcr |= (0b1UL << 23);    // Disable TTBR1
+
+    tcr |= (0b01UL << 10);  // Outer WB, allocate for TTBR0
+    tcr |= (0b01UL << 8);   // Inner WB, allocate for TTBR0
+    tcr |= (0b00UL << 14);  // 4KB Granule for TTBR0
     asm volatile("msr tcr_el1, %0" ::"r"(tcr));
 
     // Setup memory types. Basically one for dram and one for everything else
@@ -54,9 +61,9 @@ void MMU::setup_pagetables() {
     uint8_t device_memory = 0b00000000;
     uint64_t mair = 0;
     asm volatile("mrs %0, mair_el1" : "=r"(mair));
-    tcr &= ~(0xFFFF);
-    tcr |= (device_memory);                         // ATTR0
-    tcr |= (normal_outer_inner_wb_transient << 8);  // ATTR1
+    mair &= ~(0xFFFF);
+    mair |= (device_memory);                         // ATTR0
+    mair |= (normal_outer_inner_wb_transient << 8);  // ATTR1
     asm volatile("msr mair_el1, %0" ::"r"(mair));
 
     // Setup pagetables
@@ -65,19 +72,27 @@ void MMU::setup_pagetables() {
     level0_table[0] = (0b11) | (uint64_t)level1_table;
 
     log("Setting UP Level 1 Table");
-    // Level 1 Table: Blocks for Device memory, Tables for DRAM
-    level1_table[0] = (0b01) | (0b0111010000 << 2) | 0x0;
-    level1_table[1] = (0b01) | (0b0111010000 << 2) | 0x40000000;
-    for (uint64_t i = 0; i < 4; i++) {
-        // Table entries, redirecting to level2 table
-        level1_table[2 + i] = (0b11) | (((uint64_t)level2_table) + i * 512 * 8);
+    // Level 1 Table: Redirects to Table 2
+    // level1_table[0] = (0b01) | (0b0111010000 << 2) | 0x0;
+    // level1_table[1] = (0b01) | (0b0111010000 << 2) | 0x40000000;
+
+    for (uint64_t i = 0; i < 6; i++) {
+        // level2_table, redirecting to level2 table
+        level1_table[i] = (0b11) | (((uint64_t)level2_table) + i * 512 * 8);
     }
 
     log("Setting UP Level 2 Table");
+    // First 2 GB of Level 2 Table are device memory blocks
+    for (uint64_t i = 0; i < 1024; i++) {
+        level2_table[i] = (0b01) | (i * 0x200000) | (0b0111010000 << 2);
+        if (i % 51 == 0) {
+            OutputStream::instance << ".";
+        }
+    }
     // Level 2 Table: Completely redirecting to Level 3
     for (uint64_t i = 0; i < 2048; i++) {
-        // Table entries, redirecting to level2 table
-        level2_table[i] = (0b11) | (((uint64_t)level3_table) + i * 512 * 8);
+        level2_table[1024 + i] =
+            (0b11) | (((uint64_t)level3_table) + i * 512 * 8);
         if (i % 102 == 0) {
             OutputStream::instance << ".";
         }
@@ -85,11 +100,11 @@ void MMU::setup_pagetables() {
     OutputStream::instance << endl;
 
     log("Setting UP Level 3 Table");
-    // Level 3 Table: Normal memory blocks beginning at offset 0x80000000
+    // Level 3 Table: Block entries from Offset 0x80000000UL
     for (uint64_t i = 0; i < (DRAM_SIZE / 4096); i++) {
         level3_table[i] =
-            (0b01) | (0b0111010001 << 2) | (0x80000000UL + (i * 4096));
-        if (i % (DRAM_SIZE / (4096 * 10 * 2)) == 0) {
+            (0b11) | (0b111001001 << 2) | (0x80000000UL + (i * 0x1000));
+        if (i % (DRAM_SIZE / (4096 * 10 * 4)) == 0) {
             OutputStream::instance << ".";
         }
     }
@@ -97,12 +112,20 @@ void MMU::setup_pagetables() {
 
     // Finally set the ttbr0 register to level 0 table
     asm volatile("msr ttbr0_el1, %0" ::"r"(level0_table));
+    asm volatile("isb");
 }
 void MMU::activate_mmu() {
     asm volatile(
+        "isb;"
+        "dsb ishst;"
+        "tlbi VMALLE1;"
+        "ic IALLU;"
+        "dsb sy;"
+        "isb;"
         "mrs x0, sctlr_el1;"
         "orr x0, x0, #0x1;"
         "msr sctlr_el1, x0;"
+        "tlbi vmalle1;"
         "dsb sy;"
         "isb;" ::
             : "x0");

@@ -37,7 +37,7 @@ extern "C" void init_system_c() {
     asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
     spsr_el1 |= 0b1;  // Use current sp for exceptions
     asm volatile("msr spsr_el1, %0" ::"r"(spsr_el1));
-    asm volatile("msr daifclr, #0b1111");
+    asm volatile("msr daifset, #0b1111");
 
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
@@ -60,10 +60,13 @@ extern "C" void init_system_c() {
 
     MMU::instance.clean_and_disable_caches();
     log("Cleaned and disabled caches");
-    // MMU::instance.setup_pagetables();
+    MMU::instance.setup_pagetables();
     log("Setup pagetables");
-    // MMU::instance.activate_mmu();
+    // MMU::instance.activate_caches();
+    log("Caches Active");
+    MMU::instance.activate_mmu();
     log("MMU Active");
+    return;
 
     // Determine number of available performance counters
     uint64_t num_counter = PMC::instance.get_num_available_counters();
