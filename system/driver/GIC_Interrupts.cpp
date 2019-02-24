@@ -25,4 +25,8 @@ void GIC_Interrupts::handle_irq_320() {
     uint64_t par=0;
     asm volatile("mrs %0, par_el1":"=r"(par));
     log("Value in PAR is " << hex << par);
+
+    uint64_t elr=0;
+    asm volatile("mrs %0, elr_el1":"=r"(elr));
+    log("Value in ELR is " << hex << elr);
 }
