@@ -72,11 +72,15 @@ SECTIONS
     }
     __NVMSYMBOL__APPLICATION_INIT_FINI_END = .;
 
+    . = ALIGN(0x1000);
+
     __NVMSYMBOL__APPLICATION_TEXT_BEGIN = .;
     .text : {
         *(.text)
     }
     __NVMSYMBOL__APPLICATION_TEXT_END = .;
+
+    . = ALIGN(0x1000);
 
     __NVMSYMBOL__APPLICATION_DATA_BEGIN = .;
     .data : {
@@ -92,13 +96,15 @@ SECTIONS
 
     . += 0x8;
 
+    . = ALIGN(0x1000);
+
     __NVMSYMBOL__APPLICATION_BSS_BEGIN = .;
     .bss : {
         *(.bss)
     }
     __NVMSYMBOL__APPLICATION_BSS_END = .;
     
-    . = ALIGN(0x40);
+    . = ALIGN(0x1000);
 
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {

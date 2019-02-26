@@ -2,6 +2,7 @@
 #include "driver/GIC_Interrupts.h"
 #include "driver/PMC.h"
 #include "memory/MMU.h"
+#include "memory/WriteMonitor.h"
 #include "system/service/logger.h"
 
 GIC400_Distributor gic_distributor;
@@ -71,36 +72,17 @@ extern "C" void init_system_c() {
     uint64_t num_counter = PMC::instance.get_num_available_counters();
     log("Available performance counters: " << num_counter);
 
-    // Test counters
-    PMC::instance.set_counters_enabled(true);
-    PMC::instance.set_event_counter_enabled(0, true);
-    PMC::instance.set_count_event(0, PMC::BUS_ACCESS_STORE);
-    PMC::instance.set_el1_counting(0, true);
-    PMC::instance.set_non_secure_el1_counting(0, true);
-    PMC::instance.enable_overflow_interrupt(0, true);
-    gic_distributor.maskInterrupt(320, false);
-    PMC::instance.write_event_counter(0, UINT32_MAX - 1000);
+    // Start the WriteMonitor
+    extern void *__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
+    extern void *__NVMSYMBOL__APPLICATION_STACK_END;
 
-    volatile uint64_t x = 0;
-    for (volatile uint64_t i = 0; i < 2048; i++) {
-        x += i;
+    for (uintptr_t app_page = (uintptr_t)__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
+         app_page < (uintptr_t)__NVMSYMBOL__APPLICATION_STACK_END;
+         app_page += 0x1000) {
+        WriteMonitor::instance.add_page_to_observe((void *)app_page);
     }
-    PMC::instance.set_event_counter_enabled(0, false);
-    uint32_t count = PMC::instance.read_event_counter(0);
-    log("Counted in 0: " << count);
 
-    // Test Access flag
-    uintptr_t test_mem = 0x80000000UL + 0xf1000;
-    log("Test mem at " << hex << test_mem << " is mapped to "
-                       << MMU::instance.get_mapping((void *)test_mem));
-    volatile uint64_t *test_data = (volatile uint64_t *)test_mem;
-    *test_data = 42;
-    log_info("Wrote once");
-    MMU::instance.set_access_permission((void *)test_mem,
-                                        MMU::ACCESS_PERMISSION::R_FROM_EL1);
-    MMU::instance.invalidate_tlb_entry((void *)test_data);
-    // *test_data = 43;
-    log("TD " << *test_data);
+    WriteMonitor::instance.initialize();
 
     log("Calling target app (with swapped stack pointer)");
     asm volatile(
@@ -115,4 +97,7 @@ extern "C" void init_system_c() {
         "mov sp, x1;" ::"r"(&app_init)
         : "x0", "x1");
     log("App returned, exiting. Bye");
+
+    WriteMonitor::instance.terminate();
+    WriteMonitor::instance.plot_results();
 }
