@@ -12,3 +12,7 @@ WriteMonitor WriteMonitor::instance;
         log("Data Permission fault at " << hex << far_el1);
         return false;
     }
+
+    void WriteMonitor::handle_pmc_0_interrupt(){
+        log("PMC 0 overflowed");
+    }

@@ -99,7 +99,7 @@ extern "C" void init_system_c() {
     MMU::instance.set_access_permission((void *)test_mem,
                                         MMU::ACCESS_PERMISSION::R_FROM_EL1);
     MMU::instance.invalidate_tlb_entry((void *)test_data);
-    *test_data = 43;
+    // *test_data = 43;
     log("TD " << *test_data);
 
     log("Calling target app (with swapped stack pointer)");

@@ -6,6 +6,8 @@ class WriteMonitor {
     static WriteMonitor instance;
 
     bool handle_data_permission_interrupt();
+
+    void handle_pmc_0_interrupt();
 };
 
 #endif

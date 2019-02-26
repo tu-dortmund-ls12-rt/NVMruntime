@@ -1,4 +1,5 @@
 #include "GIC_Interrupts.h"
+#include <system/memory/WriteMonitor.h>
 #include <system/service/logger.h>
 
 GIC_Interrupts GIC_Interrupts::instance;
@@ -20,13 +21,13 @@ void GIC_Interrupts::trigger_irq() {
     }
 }
 
-void GIC_Interrupts::handle_irq_320() { 
-    //Read the physical address register
-    uint64_t par=0;
-    asm volatile("mrs %0, par_el1":"=r"(par));
-    log("Value in PAR is " << hex << par);
-
-    uint64_t elr=0;
-    asm volatile("mrs %0, elr_el1":"=r"(elr));
-    log("Value in ELR is " << hex << elr);
+void GIC_Interrupts::handle_irq_320() {
+    // Look, which Performance counter caused the interrupt
+    uint64_t pmovsclr = 0;
+    asm volatile("mrs %0, pmovsclr_el0" : "=r"(pmovsclr));
+    if ((pmovsclr & (0b1 << 0)) == (0b1 << 0)) {
+        WriteMonitor::instance.handle_pmc_0_interrupt();
+    }
+    // Reset the overflow bits
+    asm volatile("msr pmovsclr_el0, %0" ::"r"(pmovsclr));
 }
