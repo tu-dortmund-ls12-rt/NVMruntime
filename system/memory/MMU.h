@@ -11,7 +11,16 @@ class MMU {
     void activate_mmu();
     void activate_caches();
     void clean_and_disable_caches();
+
+    /**
+     * This will flush the entire TLB. This might cause hughe performance
+     * impact, so better invalidate selective lines, if needed
+     */
     void flush_tlb();
+    /**
+     * This will only uinvalidate TLB entries for the specific Virtual address
+     */
+    void invalidate_tlb_entry(void *vm_page);
     void set_access_flag(void *vm_page, bool af);
     enum ACCESS_PERMISSION {
         RW_FROM_EL1 = 0b00,

@@ -4,7 +4,7 @@
 MMU MMU::instance;
 
 // #define DRAM_SIZE 1073741824  // Maximum 4GB
-#define DRAM_SIZE 268435456  // Maximum 4GB
+#define DRAM_SIZE 268435456  // 256MB
 
 /**
  * Level 0 Table controls 512GB memory
@@ -172,7 +172,26 @@ void MMU::clean_and_disable_caches() {
             : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8");
 }
 
-void MMU::flush_tlb() { asm volatile("tlbi alle1"); }
+void MMU::flush_tlb() { 
+    asm volatile(
+        "dsb ishst;"
+        "tlbi vmalle1;"
+        "dsb ish;"
+        "isb;");
+ }
+void MMU::invalidate_tlb_entry(void *vm_page) {
+    uintptr_t page = (uintptr_t)vm_page;
+    page &= ~(0xfff);
+    asm volatile(
+        "mov x0, %0;"
+        "dsb ishst;"
+        "tlbi vaae1, x0;"
+        "dsb ish;"
+        "isb;" ::"r"(page)
+        : "x0");
+    // Does not work somehow :-(, maybe gem5
+    flush_tlb();
+}
 void MMU::set_access_flag(void *vm_page, bool af) {
     // Check if it is a mapped dram page
     uintptr_t page = (uintptr_t)vm_page;

@@ -98,8 +98,9 @@ extern "C" void init_system_c() {
     log_info("Wrote once");
     MMU::instance.set_access_permission((void *)test_mem,
                                         MMU::ACCESS_PERMISSION::R_FROM_EL1);
-    MMU::instance.flush_tlb();
-    *test_data = 42;
+    MMU::instance.invalidate_tlb_entry((void *)test_data);
+    *test_data = 43;
+    log("TD " << *test_data);
 
     log("Calling target app (with swapped stack pointer)");
     asm volatile(

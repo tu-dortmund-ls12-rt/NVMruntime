@@ -31,6 +31,9 @@ SECTIONS
         build/system/memory/MMU.o(.text)
         build/system/memory/MMU.o(.data)
         build/system/memory/MMU.o(.bss)
+        build/system/memory/WriteMonitor.o(.text)
+        build/system/memory/WriteMonitor.o(.data)
+        build/system/memory/WriteMonitor.o(.bss)
 
         build/system/interrupt.o(*)
         build/system/irq_handler.o(*)
