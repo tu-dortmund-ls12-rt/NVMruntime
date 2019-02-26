@@ -63,7 +63,7 @@ extern "C" void init_system_c() {
     MMU::instance.setup_pagetables();
     log("Setup pagetables");
     // MMU::instance.activate_caches();
-    log("Caches Active");
+    // log("Caches Active");
     MMU::instance.activate_mmu();
     log("MMU Active");
 
@@ -88,6 +88,18 @@ extern "C" void init_system_c() {
     PMC::instance.set_event_counter_enabled(0, false);
     uint32_t count = PMC::instance.read_event_counter(0);
     log("Counted in 0: " << count);
+
+    // Test Access flag
+    uintptr_t test_mem = 0x80000000UL + 0xf1000;
+    log("Test mem at " << hex << test_mem << " is mapped to "
+                       << MMU::instance.get_mapping((void *)test_mem));
+    volatile uint64_t *test_data = (volatile uint64_t *)test_mem;
+    *test_data = 42;
+    log_info("Wrote once");
+    MMU::instance.set_access_permission((void *)test_mem,
+                                        MMU::ACCESS_PERMISSION::R_FROM_EL1);
+    MMU::instance.flush_tlb();
+    *test_data = 42;
 
     log("Calling target app (with swapped stack pointer)");
     asm volatile(

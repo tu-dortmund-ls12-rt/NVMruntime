@@ -1,6 +1,5 @@
 #include "MMU.h"
 #include <system/service/logger.h>
-#include <system/stdint.h>
 
 MMU MMU::instance;
 
@@ -73,8 +72,6 @@ void MMU::setup_pagetables() {
 
     log("Setting UP Level 1 Table");
     // Level 1 Table: Redirects to Table 2
-    // level1_table[0] = (0b01) | (0b0111010000 << 2) | 0x0;
-    // level1_table[1] = (0b01) | (0b0111010000 << 2) | 0x40000000;
 
     for (uint64_t i = 0; i < 6; i++) {
         // level2_table, redirecting to level2 table
@@ -173,4 +170,68 @@ void MMU::clean_and_disable_caches() {
         "cmp x5, x3;"
         "ble way_loop;" ::
             : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8");
+}
+
+void MMU::flush_tlb() { asm volatile("tlbi alle1"); }
+void MMU::set_access_flag(void *vm_page, bool af) {
+    // Check if it is a mapped dram page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < 0x80000000UL) {
+        log_error("Trying to set access flag for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= 0x80000000UL + DRAM_SIZE) {
+        log_error(
+            "System does not manage this page (maybe extend the managed "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
+    if (af) {
+        *l3_desc |= (0b1 << 10);
+    } else {
+        *l3_desc &= ~(0b1 << 10);
+    }
+}
+void MMU::set_access_permission(void *vm_page, uint64_t ap) {
+    // Check if it is a mapped dram page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < 0x80000000UL) {
+        log_error("Trying to set access flag for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= 0x80000000UL + DRAM_SIZE) {
+        log_error(
+            "System does not manage this page (maybe extend the managed "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
+    *l3_desc &= ~(0b11 << 6);
+    *l3_desc |= (ap & 0b11) << 6;
+}
+void *MMU::get_mapping(void *vm_page) {
+    // Check if it is a mapped dram page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < 0x80000000UL) {
+        log_error("Trying to get the mapping for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= 0x80000000UL + DRAM_SIZE) {
+        log_error(
+            "System does not manage this page (maybe extend the managed "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
+    return (void *)((*l3_desc) & 0xFFFFFFFFF000);
 }
