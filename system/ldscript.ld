@@ -10,28 +10,47 @@ SECTIONS
         build/system/bootcode.o(*)
     }
 
-    __system_tools : {
+    . = ALIGN(0x1000);
+
+    __INTERNAL_CODE_BEGIN = .;
+    __system_tools_exec : {
         build/system/driver/PL011.o(.text)
+        build/system/service/OutputStream.o(.text)
+        build/system/driver/GIC.o(.text)
+        build/system/driver/PMC.o(.text)
+
+        build/system/driver/GIC_Interrupts.o(.text)
+
+        build/system/memory/MMU.o(.text)
+        build/system/memory/WriteMonitor.o(.text)
+
+        build/system/interrupt.o(.text)
+        build/system/irq_handler.o(.text)
+
+        build/system/init_system.o(.text)
+        build/system/syscall.o(.text)
+    }
+    __INTERNAL_CODE_END = .;
+    
+    . = ALIGN(0x1000);
+
+    __INTERNAL_DATA_BEGIN = .;
+
+    __system_tools_data : {
         build/system/driver/PL011.o(.data)
         build/system/driver/PL011.o(.bss)
-        build/system/service/OutputStream.o(.text)
         build/system/service/OutputStream.o(.data)
         build/system/service/OutputStream.o(.bss)
-        build/system/driver/GIC.o(.text)
         build/system/driver/GIC.o(.data)
         build/system/driver/GIC.o(.bss)
-        build/system/driver/PMC.o(.text)
         build/system/driver/PMC.o(.data)
         build/system/driver/PMC.o(.bss)
 
-        build/system/driver/GIC_Interrupts.o(.text)
         build/system/driver/GIC_Interrupts.o(.data)
         build/system/driver/GIC_Interrupts.o(.bss)
 
-        build/system/memory/MMU.o(.text)
         build/system/memory/MMU.o(.data)
         build/system/memory/MMU.o(.bss)
-        build/system/memory/WriteMonitor.o(.text)
         build/system/memory/WriteMonitor.o(.data)
         build/system/memory/WriteMonitor.o(.bss)
 
@@ -39,6 +58,7 @@ SECTIONS
         build/system/irq_handler.o(*)
 
         build/system/init_system.o(*)
+        build/system/syscall.o(*)
     }
     __NVMSYMBOL__DRIVER_END = .;
 
@@ -109,7 +129,7 @@ SECTIONS
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {
         . = ALIGN(0x8);
-        . += 0x1000; /* 1MB */
+        . += 0x10000; /* 1MB */
         __stack_top = .;
     }
     __NVMSYMBOL__APPLICATION_STACK_END = .;

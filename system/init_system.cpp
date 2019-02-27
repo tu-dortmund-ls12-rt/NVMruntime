@@ -38,7 +38,6 @@ extern "C" void init_system_c() {
     asm volatile("mrs %0, spsr_el1" : "=r"(spsr_el1));
     spsr_el1 |= 0b1;  // Use current sp for exceptions
     asm volatile("msr spsr_el1, %0" ::"r"(spsr_el1));
-    asm volatile("msr daifclr, #0b1111");
 
     log("Clearing the BSS");
     extern unsigned long __NVMSYMBOL__APPLICATION_BSS_BEGIN;
@@ -70,34 +69,56 @@ extern "C" void init_system_c() {
 
     // Determine number of available performance counters
     uint64_t num_counter = PMC::instance.get_num_available_counters();
-    log("Available performance counters: " << num_counter);
+    log("Available performance counters: " << dec << num_counter);
 
     // Start the WriteMonitor
+    extern void *__INTERNAL_CODE_BEGIN;
+    extern void *__INTERNAL_CODE_END;
+    extern void *__INTERNAL_DATA_BEGIN;
     extern void *__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
     extern void *__NVMSYMBOL__APPLICATION_STACK_END;
 
-    for (uintptr_t app_page = (uintptr_t)__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
-         app_page < (uintptr_t)__NVMSYMBOL__APPLICATION_STACK_END;
+    /**
+     * Setup the memory access permissions, such that el0 can access the full
+     * code
+     */
+
+    for (uintptr_t app_page = (uintptr_t)&__INTERNAL_CODE_BEGIN;
+         app_page < (uintptr_t)&__INTERNAL_CODE_END; app_page += 0x1000) {
+        MMU::instance.set_access_permission(
+            (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1);
+    }
+    for (uintptr_t app_page = (uintptr_t)&__INTERNAL_DATA_BEGIN;
+         app_page < (uintptr_t)&__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
+         app_page += 0x1000) {
+        MMU::instance.set_access_permission(
+            (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
+    }
+    for (uintptr_t app_page = (uintptr_t)&__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
+         app_page < (uintptr_t)&__NVMSYMBOL__APPLICATION_STACK_END;
          app_page += 0x1000) {
         WriteMonitor::instance.add_page_to_observe((void *)app_page);
+        MMU::instance.set_access_permission(
+            (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     }
+    MMU::instance.flush_tlb();
 
     WriteMonitor::instance.initialize();
 
-    log("Calling target app (with swapped stack pointer)");
+    log("Calling target app (with swapped stack pointer on EL0)");
+    asm volatile("msr daifclr, #0b1111");
+    // app_init();
+
     asm volatile(
         "ldr x0, =__stack_top;"
-        "mov x1, sp;"
-        "mov sp, x0;"
-        "str x1, [sp, #-8];"
-        "sub sp, sp, #16;"
-        "blr %0;"
-        "add sp, sp, #8;"
-        "ldr x1, [sp, #0];"
-        "mov sp, x1;" ::"r"(&app_init)
-        : "x0", "x1");
-    log("App returned, exiting. Bye");
-
-    WriteMonitor::instance.terminate();
-    WriteMonitor::instance.plot_results();
+        "msr sp_el0, x0;" ::
+            : "x0");
+    asm volatile("msr elr_el1, %0;" ::"r"(&app_init));
+    uint64_t spsr = 0;
+    asm volatile("mrs %0, spsr_el1" : "=r"(spsr));
+    spsr &= ~(0b111);
+    asm volatile("msr spsr_el1, %0" ::"r"(spsr));
+    asm volatile("eret");
+    while (1)
+        ;
 }

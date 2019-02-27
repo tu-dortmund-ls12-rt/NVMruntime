@@ -3,9 +3,9 @@
 
 #include <system/stdint.h>
 
-#define MONITOR_CAPACITY 1024
+#define MONITOR_CAPACITY 256
 #define SYSTEM_OFFSET 0x80000000
-#define MONITORING_RESOLUTION 10
+#define MONITORING_RESOLUTION 1000
 
 /**
  * The Write Monitor uses some mechanisms to approximate the write count per

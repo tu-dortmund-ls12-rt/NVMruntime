@@ -11,14 +11,13 @@ WriteMonitor WriteMonitor::instance;
 
 void WriteMonitor::initialize() {
     // Set all observed pages not writable
-    set_all_observed_pages(true);
+    // set_all_observed_pages(true);
 
     // Initialize the performance counter
     PMC::instance.set_counters_enabled(true);
     PMC::instance.set_event_counter_enabled(0, true);
     PMC::instance.set_count_event(0, PMC::BUS_ACCESS_STORE);
-    PMC::instance.set_el1_counting(0, true);
-    PMC::instance.set_non_secure_el1_counting(0, true);
+    PMC::instance.set_non_secure_el0_counting(0, true);
     PMC::instance.enable_overflow_interrupt(0, true);
     gic_distributor.maskInterrupt(320, false);
     PMC::instance.write_event_counter(0, UINT32_MAX - MONITORING_RESOLUTION);
@@ -48,12 +47,13 @@ void WriteMonitor::add_page_to_observe(void *vm_page) {
 
 void WriteMonitor::set_all_observed_pages(bool generate_interrupt_on_write) {
     for (uint64_t i = 0; i < observerd_vm_pages_count; i++) {
-        if (generate_interrupt_on_write)
+        if (generate_interrupt_on_write) {
             MMU::instance.set_access_permission(
-                vm_pages_to_observe[i], MMU::ACCESS_PERMISSION::R_FROM_EL1);
-        else
+                vm_pages_to_observe[i], MMU::ACCESS_PERMISSION::R_FROM_EL1_EL0);
+        } else
             MMU::instance.set_access_permission(
-                vm_pages_to_observe[i], MMU::ACCESS_PERMISSION::RW_FROM_EL1);
+                vm_pages_to_observe[i],
+                MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     }
     MMU::instance.flush_tlb();
 }
@@ -63,18 +63,21 @@ bool WriteMonitor::handle_data_permission_interrupt() {
     uint64_t far_el1 = 0;
     asm volatile("mrs %0, far_el1" : "=r"(far_el1));
 
-    log("Data Permission fault at " << hex << far_el1);
+    // log("Data Permission fault at " << hex << far_el1);
     uintptr_t fault_page = far_el1 & ~(0xFFF);
-    write_count[(uint64_t)(MMU::instance.get_mapping((void *)fault_page))]++;
+    write_count[((uint64_t)(MMU::instance.get_mapping((void *)fault_page)) -
+                 SYSTEM_OFFSET) /
+                0x1000]++;
 
-    MMU::instance.set_access_permission((void *)fault_page,
-                                        MMU::ACCESS_PERMISSION::RW_FROM_EL1);
+    MMU::instance.set_access_permission(
+        (void *)fault_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     MMU::instance.invalidate_tlb_entry((void *)fault_page);
-    return false;
+    return true;
 }
 
 void WriteMonitor::handle_pmc_0_interrupt() {
-    log("PMC 0 overflowed");
+    // log("PMC 0 overflowed");
     // Simply reset all acces permissions to generate interrupts
     set_all_observed_pages(true);
+    PMC::instance.write_event_counter(0, UINT32_MAX - MONITORING_RESOLUTION);
 }

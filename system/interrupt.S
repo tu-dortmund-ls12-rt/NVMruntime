@@ -89,6 +89,7 @@ arm_vector_table_el1:
 
 .balign 0x80
 __arm_lowlevel_trap_handler_sync:
+
 	//Store frame pointer
 	str x29,[sp,#-16]!
 	mov x29,sp
