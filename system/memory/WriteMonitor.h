@@ -5,7 +5,7 @@
 
 #define MONITOR_CAPACITY 256
 #define SYSTEM_OFFSET 0x80000000
-#define MONITORING_RESOLUTION 1000
+#define MONITORING_RESOLUTION 500
 
 /**
  * The Write Monitor uses some mechanisms to approximate the write count per

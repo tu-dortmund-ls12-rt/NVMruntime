@@ -103,10 +103,8 @@ extern "C" void init_system_c() {
     }
     MMU::instance.flush_tlb();
 
-    WriteMonitor::instance.initialize();
-
     log("Calling target app (with swapped stack pointer on EL0)");
-    asm volatile("msr daifclr, #0b1111");
+    // asm volatile("msr daifclr, #0b1111");
     // app_init();
 
     asm volatile(
@@ -118,6 +116,9 @@ extern "C" void init_system_c() {
     asm volatile("mrs %0, spsr_el1" : "=r"(spsr));
     spsr &= ~(0b111);
     asm volatile("msr spsr_el1, %0" ::"r"(spsr));
+    log("Handover to app");
+
+    WriteMonitor::instance.initialize();
     asm volatile("eret");
     while (1)
         ;
