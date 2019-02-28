@@ -118,7 +118,7 @@ extern "C" void init_system_c() {
     asm volatile("msr spsr_el1, %0" ::"r"(spsr));
     log("Handover to app");
 
-    WriteMonitor::instance.initialize();
+    // WriteMonitor::instance.initialize();
     asm volatile("eret");
     while (1)
         ;

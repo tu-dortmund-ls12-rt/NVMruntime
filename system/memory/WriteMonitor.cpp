@@ -69,8 +69,9 @@ bool WriteMonitor::handle_data_permission_interrupt() {
                  SYSTEM_OFFSET) /
                 0x1000]++;
 
-    MMU::instance.set_access_permission(
-        (void *)fault_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
+    // MMU::instance.set_access_permission(
+    //     (void *)fault_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
+    set_all_observed_pages(false);
     MMU::instance.invalidate_tlb_entry((void *)fault_page);
     return true;
 }
