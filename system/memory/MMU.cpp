@@ -172,13 +172,13 @@ void MMU::clean_and_disable_caches() {
             : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8");
 }
 
-void MMU::flush_tlb() { 
+void MMU::flush_tlb() {
     asm volatile(
         "dsb ishst;"
         "tlbi vmalle1;"
         "dsb ish;"
         "isb;");
- }
+}
 void MMU::invalidate_tlb_entry(void *vm_page) {
     uintptr_t page = (uintptr_t)vm_page;
     page &= ~(0xfff);
@@ -253,4 +253,25 @@ void *MMU::get_mapping(void *vm_page) {
 
     uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
     return (void *)((*l3_desc) & 0xFFFFFFFFF000);
+}
+
+void MMU::set_page_mapping(void *vm_page, void *phys_page) {
+    // Check if it is a mapped dram page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < 0x80000000UL) {
+        log_error("Trying to get the mapping for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= 0x80000000UL + DRAM_SIZE) {
+        log_error(
+            "System does not manage this page (maybe extend the managed "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
+    (*l3_desc) &= ~0xFFFFFFFFF000;                         // Clear mapping
+    (*l3_desc) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping
 }

@@ -30,6 +30,8 @@ class MMU {
     };
     void set_access_permission(void *vm_page, uint64_t ap);
     void *get_mapping(void *vm_page);
+
+    void set_page_mapping(void *vm_page, void *phys_page);
 };
 
 #endif

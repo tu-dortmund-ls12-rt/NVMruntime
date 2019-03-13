@@ -103,6 +103,26 @@ extern "C" void init_system_c() {
     }
     MMU::instance.flush_tlb();
 
+    log("Testing remapping function");
+    void *p1 = (void *)0x800e0000;
+    void *p2 = (void *)0x800f0000;
+
+    *((uint64_t *)p1) = 0x42123abc;
+    *((uint64_t *)p2) = 0x555555;
+    MMU::instance.set_page_mapping(p2, p1);
+    MMU::instance.invalidate_tlb_entry(p2);
+    log("Value in second page (not writtem to) is " << hex
+                                                    << *((uint64_t *)p2));
+
+    log("Value in first page (before remap) is " << hex << *((uint64_t *)p1));
+
+    MMU::instance.set_page_mapping(p1, p2);
+    MMU::instance.invalidate_tlb_entry(p1);
+
+    log("Value in first page (after remap) is " << hex << *((uint64_t *)p1));
+    while (1)
+        ;
+
     log("Calling target app (with swapped stack pointer on EL0)");
     // asm volatile("msr daifclr, #0b1111");
     // app_init();
