@@ -1,4 +1,5 @@
 #include "data.h"
+#include "system/data/RBTree.h"
 #include "system/service/logger.h"
 
 void quick_sort(uint8_t *begin, uint8_t *end);
@@ -7,6 +8,20 @@ void quick_sort(uint8_t *begin, uint8_t *end);
 uint64_t bss_filler[1];
 
 void app_init() {
+    log("Testing rbtree, inserting first 20 random numbers");
+    RBTree<unsigned int> test_tree;
+    RBTree<unsigned int>::node nodes[20];
+    for (int i = 0; i < 20; i++) {
+        nodes[i].value = random_number[i];
+        log("Placing element " << nodes[i].value);
+        test_tree.insert(nodes + i);
+        // test_tree.print_tree();
+    }
+    log("Tree now has " << test_tree.get_element_count() << " Elements");
+    while (test_tree.get_element_count() > 0) {
+        log("Next minimum is " << test_tree.pop_minimum());
+    }
+
     log("Starting to sort " << dec << array_size << " numbers");
 
     quick_sort(random_number, random_number + array_size);

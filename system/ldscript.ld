@@ -29,6 +29,8 @@ SECTIONS
 
         build/system/init_system.o(.text)
         build/system/syscall.o(.text)
+
+        build/system/data/RBTree.o(.text)
     }
     __INTERNAL_CODE_END = .;
     
@@ -59,6 +61,8 @@ SECTIONS
 
         build/system/init_system.o(*)
         build/system/syscall.o(*)
+
+        build/system/data/RBTree.o(*)
     }
     __NVMSYMBOL__DRIVER_END = .;
 
