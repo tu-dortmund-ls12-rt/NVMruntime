@@ -5,6 +5,7 @@ template <class T>
 class Node_Comparator {
    public:
     static int compare(T node1, T node2);
+    static bool equals(T node1, T node2);
 };
 
 template <class T>
@@ -23,6 +24,7 @@ class RBTree {
     };
 
     void insert(struct node *element);
+    void remove(struct node *element);
     T pop_minimum();
     unsigned long get_element_count();
 

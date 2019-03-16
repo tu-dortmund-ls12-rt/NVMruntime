@@ -1,4 +1,5 @@
 #include "data.h"
+#include "system/data/RBTree.h"
 #include "system/service/logger.h"
 
 void quick_sort(uint8_t *begin, uint8_t *end);
@@ -7,7 +8,6 @@ void quick_sort(uint8_t *begin, uint8_t *end);
 uint64_t bss_filler[1];
 
 void app_init() {
-
     log("Starting to sort " << dec << array_size << " numbers");
 
     quick_sort(random_number, random_number + array_size);
