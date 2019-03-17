@@ -23,6 +23,7 @@ SECTIONS
 
         build/system/memory/MMU.o(.text)
         build/system/memory/WriteMonitor.o(.text)
+        build/system/memory/PageBalancer.o(.text)
 
         build/system/interrupt.o(.text)
         build/system/irq_handler.o(.text)
@@ -55,6 +56,8 @@ SECTIONS
         build/system/memory/MMU.o(.bss)
         build/system/memory/WriteMonitor.o(.data)
         build/system/memory/WriteMonitor.o(.bss)
+        build/system/memory/PageBalancer.o(.data)
+        build/system/memory/PageBalancer.o(.bss)
 
         build/system/interrupt.o(*)
         build/system/irq_handler.o(*)
@@ -73,6 +76,12 @@ SECTIONS
         __bootstack_top = .;
     }
     __NVMSYMBOL_BOOTSTACK_END =.;
+
+    . = ALIGN(0x1000);
+
+    __NVMSYMBOL_SPARE_VM_PAGE_BEGIN = .;
+    . += 0x1000;
+    __NVMSYMBOL_SPARE_VM_PAGE_END = .;
 
     __NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN = .;
     .init_array     :
