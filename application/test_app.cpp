@@ -13,9 +13,9 @@ void app_init() {
     quick_sort(random_number, random_number + array_size);
 
     asm volatile("svc #0");
-    // for (uint64_t i = 0; i < array_size; i++) {
-    //     log(random_number[i]);
-    // }
+    for (uint64_t i = 0; i < array_size; i++) {
+        log(random_number[i]);
+    }
 }
 
 void quick_sort(uint8_t *begin, uint8_t *end) {

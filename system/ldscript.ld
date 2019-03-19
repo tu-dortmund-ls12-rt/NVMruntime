@@ -31,7 +31,7 @@ SECTIONS
         build/system/init_system.o(.text)
         build/system/syscall.o(.text)
 
-        build/system/data/RBTree.o(.text)
+        build/system/data/RBTree.o(*)
     }
     __INTERNAL_CODE_END = .;
     
