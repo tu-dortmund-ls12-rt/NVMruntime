@@ -4,6 +4,7 @@
 #include <system/driver/GIC.h>
 #include <system/driver/PMC.h>
 #include <system/memory/MMU.h>
+#include <system/memory/PageBalancer.h>
 
 extern GIC400_Distributor gic_distributor;
 
@@ -45,6 +46,10 @@ void WriteMonitor::add_page_to_observe(void *vm_page) {
     vm_pages_to_observe[observerd_vm_pages_count++] = vm_page;
 }
 
+void WriteMonitor::set_notify_threshold(uint64_t notify_threshold) {
+    this->notify_threshold = notify_threshold;
+}
+
 void WriteMonitor::set_all_observed_pages(bool generate_interrupt_on_write) {
     for (uint64_t i = 0; i < observerd_vm_pages_count; i++) {
         if (generate_interrupt_on_write) {
@@ -65,9 +70,13 @@ bool WriteMonitor::handle_data_permission_interrupt() {
 
     // log("Data Permission fault at " << hex << far_el1);
     uintptr_t fault_page = far_el1 & ~(0xFFF);
-    write_count[((uint64_t)(MMU::instance.get_mapping((void *)fault_page)) -
-                 SYSTEM_OFFSET) /
-                0x1000]++;
+    write_count[((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000]++;
+
+    if (write_count[((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000] >=
+        notify_threshold) {
+        write_count[((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000] = 0;
+        PageBalancer::instance.trigger_rebalance((void *)(far_el1 & ~0xFFF));
+    }
 
     // MMU::instance.set_access_permission(
     //     (void *)fault_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);

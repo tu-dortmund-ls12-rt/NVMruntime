@@ -1,5 +1,8 @@
 #include "RBTree.h"
 #include <system/service/logger.h>
+#include <system/memory/PageBalancer.h>
+
+template class RBTree<phys_page_handle>;
 
 template class RBTree<unsigned int>;
 template class Node_Comparator<unsigned int>;

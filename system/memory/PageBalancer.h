@@ -6,6 +6,7 @@ extern void *__NVMSYMBOL__APPLICATION_STACK_END;
 extern void *__NVMSYMBOL_SPARE_VM_PAGE_BEGIN;
 
 #define MAX_MANAGED_PAGES 256
+#define REBALANCE_THRESHOLD 10
 
 struct phys_page_handle {
     uintptr_t phys_address;
@@ -20,7 +21,10 @@ class PageBalancer {
 
     void enable_balancing();
 
+    void trigger_rebalance(void *vm_page);
+
    private:
-    struct RBTree<phys_page_handle>::node
-        managed_pages[MAX_MANAGED_PAGES];
+    struct RBTree<phys_page_handle>::node managed_pages[MAX_MANAGED_PAGES];
+
+    RBTree<phys_page_handle> aes_tree;
 };
