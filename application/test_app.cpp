@@ -8,14 +8,16 @@ void quick_sort(uint8_t *begin, uint8_t *end);
 uint64_t bss_filler[1];
 
 void app_init() {
-    log("Starting to sort " << dec << array_size << " numbers");
+    unsigned int sort_size = 1000;
+    log("Starting to sort " << dec << sort_size << " numbers");
 
-    quick_sort(random_number, random_number + array_size);
+    quick_sort(random_number, random_number + sort_size);
 
-    asm volatile("svc #0");
-    for (uint64_t i = 0; i < array_size; i++) {
+    for (uint64_t i = 0; i < sort_size; i++) {
         log(random_number[i]);
     }
+
+    asm volatile("svc #0");
 }
 
 void quick_sort(uint8_t *begin, uint8_t *end) {
