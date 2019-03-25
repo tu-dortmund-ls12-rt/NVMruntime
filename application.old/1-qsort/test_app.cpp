@@ -1,5 +1,8 @@
 #include "data.h"
+#include "system/data/RBTree.h"
 #include "system/service/logger.h"
+
+#include <system/driver/math.h>
 
 void quick_sort(uint8_t *begin, uint8_t *end);
 
@@ -7,8 +10,16 @@ void quick_sort(uint8_t *begin, uint8_t *end);
 uint64_t bss_filler[1];
 
 void app_init() {
-    // log("Starting to sort " << array_size << " numbers");
-    quick_sort(random_number, random_number + array_size);
+    unsigned int sort_size = 1000;
+    log("Starting to sort " << dec << sort_size << " numbers");
+
+    quick_sort(random_number, random_number + sort_size);
+
+    for (uint64_t i = 0; i < sort_size; i++) {
+        log(random_number[i]);
+    }
+
+    asm volatile("svc #0");
 }
 
 void quick_sort(uint8_t *begin, uint8_t *end) {
