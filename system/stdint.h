@@ -15,5 +15,6 @@ typedef uint64_t uintptr_t;
 typedef uint64_t size_t;
 
 #define UINT32_MAX 0xFFFFFFFF
+#define UINT64_MAX 0xFFFFFFFFFFFFFFFF
 
 #endif

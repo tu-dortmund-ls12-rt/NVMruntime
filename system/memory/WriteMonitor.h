@@ -5,7 +5,7 @@
 
 #define MONITOR_CAPACITY 256
 #define SYSTEM_OFFSET 0x80000000
-#define MONITORING_RESOLUTION 500
+#define MONITORING_RESOLUTION 5000
 
 /**
  * The Write Monitor uses some mechanisms to approximate the write count per
@@ -20,7 +20,7 @@ class WriteMonitor {
     void initialize();
     void terminate();
     void plot_results();
-    void add_page_to_observe(void *vm_page);
+    void add_page_to_observe(void* vm_page);
     void set_notify_threshold(uint64_t notify_threshold);
 
     bool handle_data_permission_interrupt();
@@ -32,7 +32,7 @@ class WriteMonitor {
     void* vm_pages_to_observe[MONITOR_CAPACITY];
     uint64_t observerd_vm_pages_count = 0;
 
-    uint64_t notify_threshold=0;
+    uint64_t notify_threshold = UINT64_MAX;
 
     // Helper functions
     void set_all_observed_pages(bool generate_interrupt_on_write);

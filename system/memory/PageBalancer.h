@@ -6,7 +6,7 @@ extern void *__NVMSYMBOL__APPLICATION_STACK_END;
 extern void *__NVMSYMBOL_SPARE_VM_PAGE_BEGIN;
 
 #define MAX_MANAGED_PAGES 256
-#define REBALANCE_THRESHOLD 20
+#define REBALANCE_THRESHOLD 1
 
 struct phys_page_handle {
     uintptr_t phys_address;

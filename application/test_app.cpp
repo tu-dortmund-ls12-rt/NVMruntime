@@ -4,50 +4,80 @@
 
 #include <system/driver/math.h>
 
-void quick_sort(uint8_t *begin, uint8_t *end);
-
 // Some data inside BSS
 uint64_t bss_filler[1];
 
+void fft(int8_t *target_array_real, int8_t *target_array_imaginary,
+         uint8_t *src_array, uint64_t el_count);
+
 void app_init() {
-    unsigned int sort_size = 1000;
-    log("Starting to sort " << dec << sort_size << " numbers");
+    uint64_t horizon = 100;
+    log("Calculating fft for horizon of " << dec << horizon << " values");
 
-    quick_sort(random_number, random_number + sort_size);
+    int8_t target_real[horizon];
+    int8_t target_imaginary[horizon];
+    fft(target_real, target_imaginary, random_number, horizon);
 
-    for (uint64_t i = 0; i < sort_size; i++) {
-        log(random_number[i]);
+    log("Printing result");
+    for (uint64_t i = 0; i < horizon; i++) {
+        log("[" << dec << i << "]:\t " << dec << target_real[i] << " + " << dec
+                << target_imaginary[i] << "i");
     }
 
     asm volatile("svc #0");
 }
 
-void quick_sort(uint8_t *begin, uint8_t *end) {
-    if (begin + 2 >= end) {
+void fft(int8_t *target_array_real, int8_t *target_array_imaginary,
+         uint8_t *src_array, uint64_t el_count) {
+    if (el_count == 0) {
         return;
     }
-    uint8_t *pivot_element = end - 1;
+    if (el_count == 1) {
+        target_array_real[0] = src_array[0];
+        target_array_imaginary[0] = 0;
+        return;
+    }
 
-    uint8_t *li = begin;
-    uint8_t *ri = end - 1;
+    uint64_t l_size = el_count / 2;
+    uint64_t r_size = (el_count / 2) + (el_count % 2);
 
-    while (li < ri) {
-        while (li < end - 2 && *li < *pivot_element) li++;
-        while (ri > begin && *ri >= *pivot_element) ri--;
+    uint8_t l_src[l_size];
+    uint8_t r_src[r_size];
 
-        if (li < ri) {
-            uint8_t buffer = *li;
-            *li = *ri;
-            *ri = buffer;
+    for (uint64_t i = 0; i < el_count; i++) {
+        if (i % 2 == 0) {
+            l_src[i / 2] = src_array[i];
+        } else {
+            r_src[i / 2] = src_array[i];
         }
     }
 
-    if (*li > *pivot_element) {
-        uint8_t buffer = *li;
-        *li = *pivot_element;
-        *pivot_element = buffer;
-    }
+    int8_t l_target_real[l_size];
+    int8_t l_target_imaginary[l_size];
+    int8_t r_target_real[r_size];
+    int8_t r_target_imaginary[r_size];
 
-    quick_sort(begin, li);
-    quick_sort(li + 1, end);
+    fft(l_target_real, l_target_imaginary, l_src, l_size);
+    fft(r_target_real, r_target_imaginary, r_src, r_size);
+
+    for (uint64_t i = 0; i < (el_count / 2); i++) {
+        double exp_real =
+            Math::cos(-2 * Math::pi() * (((double)(i)) / (el_count)));
+        double exp_im =
+            Math::sin(-2 * Math::pi() * (((double)(i)) / (el_count)));
+
+        target_array_real[i] =
+            l_target_real[i] +
+            (r_target_real[i] * exp_real - r_target_imaginary[i] * exp_im);
+        target_array_imaginary[i] =
+            l_target_imaginary[i] +
+            (r_target_real[i] * exp_im + r_target_imaginary[i] * exp_real);
+
+        target_array_real[i + (el_count / 2)] =
+            l_target_real[i] -
+            (r_target_real[i] * exp_real - r_target_imaginary[i] * exp_im);
+        target_array_imaginary[i + (el_count / 2)] =
+            l_target_imaginary[i] -
+            (r_target_real[i] * exp_im + r_target_imaginary[i] * exp_real);
+    }
 }
