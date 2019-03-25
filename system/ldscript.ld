@@ -32,6 +32,8 @@ SECTIONS
         build/system/syscall.o(.text)
 
         build/system/data/RBTree.o(*)
+
+        build/system/driver/math.o(.text)
     }
     __INTERNAL_CODE_END = .;
     
@@ -66,6 +68,8 @@ SECTIONS
         build/system/syscall.o(*)
 
         build/system/data/RBTree.o(*)
+
+        build/system/driver/math.o(*)
     }
     __NVMSYMBOL__DRIVER_END = .;
 

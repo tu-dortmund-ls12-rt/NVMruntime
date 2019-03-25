@@ -70,16 +70,17 @@ bool WriteMonitor::handle_data_permission_interrupt() {
 
     // log("Data Permission fault at " << hex << far_el1);
     uintptr_t fault_page = far_el1 & ~(0xFFF);
-    write_count[((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000]++;
+    uint64_t fault_page_number =
+        ((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000;
+    write_count[fault_page_number]++;
 
     // MMU::instance.set_access_permission(
     //     (void *)fault_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     set_all_observed_pages(false);
     MMU::instance.invalidate_tlb_entry((void *)fault_page);
 
-    if (write_count[((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000] >=
-        notify_threshold) {
-        write_count[((uint64_t)(fault_page)-SYSTEM_OFFSET) / 0x1000] = 0;
+    if (write_count[fault_page_number] >= notify_threshold) {
+        write_count[fault_page_number] = 0;
         PageBalancer::instance.trigger_rebalance((void *)(far_el1 & ~0xFFF));
     }
 

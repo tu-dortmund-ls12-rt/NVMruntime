@@ -2,6 +2,8 @@
 #include "system/data/RBTree.h"
 #include "system/service/logger.h"
 
+#include <system/driver/math.h>
+
 void quick_sort(uint8_t *begin, uint8_t *end);
 
 // Some data inside BSS

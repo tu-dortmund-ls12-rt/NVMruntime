@@ -2,8 +2,8 @@
 #include "driver/GIC_Interrupts.h"
 #include "driver/PMC.h"
 #include "memory/MMU.h"
-#include "memory/WriteMonitor.h"
 #include "memory/PageBalancer.h"
+#include "memory/WriteMonitor.h"
 #include "system/service/logger.h"
 
 GIC400_Distributor gic_distributor;
@@ -14,6 +14,7 @@ extern void app_init();
 /**
  * This function is called by the assmebler bootcode
  */
+
 extern "C" void init_system_c() {
     extern void (*__init_array_start)();
     extern void (*__init_array_end)();
@@ -58,6 +59,13 @@ extern "C" void init_system_c() {
     }
     OutputStream::instance << "\n";
     log("Cleared the BSS");
+
+    asm volatile(
+        "mov x1, #(0b11 << 20);"
+        "msr cpacr_el1, x1;"
+        "isb;" ::
+            : "x1");
+    log("Disabled floating point trapping");
 
     MMU::instance.clean_and_disable_caches();
     log("Cleaned and disabled caches");
@@ -105,8 +113,6 @@ extern "C" void init_system_c() {
     MMU::instance.flush_tlb();
 
     log("Calling target app (with swapped stack pointer on EL0)");
-    // asm volatile("msr daifclr, #0b1111");
-    // app_init();
 
     asm volatile(
         "ldr x0, =__stack_top;"

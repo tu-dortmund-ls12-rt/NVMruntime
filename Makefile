@@ -32,6 +32,10 @@ $(BUILD_DIR)/%.o : %.c
 	@echo "C		$< -> $@"
 	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
 
+$(BUILD_DIR)/%.o : %.cpp %.h
+	@echo "CC		$< -> $@"
+	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
+
 $(BUILD_DIR)/%.o : %.cpp
 	@echo "CC		$< -> $@"
 	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
