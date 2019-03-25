@@ -106,7 +106,9 @@ extern "C" void init_system_c() {
     for (uintptr_t app_page = (uintptr_t)&__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
          app_page < (uintptr_t)&__NVMSYMBOL__APPLICATION_STACK_END;
          app_page += 0x1000) {
+#ifdef DO_MONITORING
         WriteMonitor::instance.add_page_to_observe((void *)app_page);
+#endif
         MMU::instance.set_access_permission(
             (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     }
@@ -125,8 +127,12 @@ extern "C" void init_system_c() {
     asm volatile("msr spsr_el1, %0" ::"r"(spsr));
     log("Handover to app");
 
+#ifdef DO_MONITORING
     WriteMonitor::instance.initialize();
-    // PageBalancer::instance.enable_balancing();
+#endif
+#ifdef DO_REBALANCING
+    PageBalancer::instance.enable_balancing();
+#endif
     asm volatile("eret");
     while (1)
         ;

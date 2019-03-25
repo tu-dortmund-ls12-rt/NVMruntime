@@ -2,10 +2,11 @@ CROSS_COMPILER=aarch64-linux-gnu
 GEM5_PATH=/home/christian/repos/MA-NVM/gem5
 NVMAIN_PATH=/home/christian/repos/MA-NVM/nvmain
 
-CCFLAGS=-Wall -Werror -nostdlib -I. -mstrict-align
+CCFLAGS=-Wall -Werror -nostdlib -I. -mstrict-align -include system/config.h
 LDFLAGS=-T system/ldscript.ld -nostdlib -static -nostartfiles -N -mstrict-align
 
 MODULES=system application
+ALL_DEPS=system/config.h
 BUILD_DIR=build
 
 C_SOURCES=$(shell find $(MODULES) -name "*.c")
@@ -28,19 +29,19 @@ $(TARGET_APP).elf: $(OBJECTS)
 	@echo "LD		$@"
 	@$(CROSS_COMPILER)-g++ $(LDFLAGS) -o $@ $(OBJECTS)
 
-$(BUILD_DIR)/%.o : %.c
+$(BUILD_DIR)/%.o : %.c $(ALL_DEPS)
 	@echo "C		$< -> $@"
 	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o : %.cpp %.h
+$(BUILD_DIR)/%.o : %.cpp %.h $(ALL_DEPS)
 	@echo "CC		$< -> $@"
 	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o : %.cpp
+$(BUILD_DIR)/%.o : %.cpp $(ALL_DEPS)
 	@echo "CC		$< -> $@"
 	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o : %.S
+$(BUILD_DIR)/%.o : %.S $(ALL_DEPS)
 	@echo "ASM		$< -> $@"
 	@$(CROSS_COMPILER)-g++ $(CCFLAGS) -c $< -o $@
 
