@@ -7,7 +7,7 @@
 
 #define REBALANCE_THRESHOLD 10
 
-#define DO_REBALANCING
+// #define DO_REBALANCING
 // #define DO_MONITORING
 
 #endif
