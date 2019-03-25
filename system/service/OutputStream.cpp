@@ -121,6 +121,23 @@ OutputStream& OutputStream::operator<<(int64_t number) {
     return *this << plot_int(number, array);
 }
 
+OutputStream& OutputStream::operator<<(double number) {
+    bool negative = false;
+    if (number < 0) {
+        negative = true;
+        number *= -1;
+    }
+
+    uint64_t rounded = (uint64_t)number;
+    uint64_t ko = (uint64_t)(number * 10000);
+    ko -= rounded * 10000;
+
+    if (negative) {
+        *this << "-";
+    }
+    return *this << dec << rounded << "." << dec << ko;
+}
+
 OutputStream& OutputStream::operator<<(void* ptr) {
     return *this << hex << ((uintptr_t)ptr);
 }
