@@ -5,24 +5,24 @@
 #include <system/driver/math.h>
 
 // Some data inside BSS
-uint64_t bss_filler[1];
+uint64_t bss_filler[2048];
 
 void fft(int8_t *target_array_real, int8_t *target_array_imaginary,
          uint8_t *src_array, uint64_t el_count);
 
 void app_init() {
-    uint64_t horizon = 100;
+    uint64_t horizon = 500;
     log("Calculating fft for horizon of " << dec << horizon << " values");
 
     int8_t target_real[horizon];
     int8_t target_imaginary[horizon];
     fft(target_real, target_imaginary, random_number, horizon);
 
-    log("Printing result");
-    for (uint64_t i = 0; i < horizon; i++) {
-        log("[" << dec << i << "]:\t " << dec << target_real[i] << " + " << dec
-                << target_imaginary[i] << "i");
-    }
+    // log("Printing result");
+    // for (uint64_t i = 0; i < horizon; i++) {
+    //     log("[" << dec << i << "]:\t " << dec << target_real[i] << " + " << dec
+    //             << target_imaginary[i] << "i");
+    // }
 
     asm volatile("svc #0");
 }

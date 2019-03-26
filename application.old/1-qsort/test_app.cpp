@@ -7,17 +7,17 @@
 void quick_sort(uint8_t *begin, uint8_t *end);
 
 // Some data inside BSS
-uint64_t bss_filler[1];
+uint64_t bss_filler[2048];
 
 void app_init() {
-    unsigned int sort_size = 1000;
+    unsigned int sort_size = 5000;
     log("Starting to sort " << dec << sort_size << " numbers");
 
     quick_sort(random_number, random_number + sort_size);
 
-    for (uint64_t i = 0; i < sort_size; i++) {
-        log(random_number[i]);
-    }
+    // for (uint64_t i = 0; i < sort_size; i++) {
+    //     log(random_number[i]);
+    // }
 
     asm volatile("svc #0");
 }

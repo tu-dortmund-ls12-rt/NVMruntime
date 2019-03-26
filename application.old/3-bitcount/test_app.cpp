@@ -5,12 +5,12 @@
 #include <system/driver/math.h>
 
 // Some data inside BSS
-uint64_t bss_filler[1];
+uint64_t bss_filler[2048];
 
 uint64_t bitcount(uint8_t *data, uint64_t el_count);
 
 void app_init() {
-    uint64_t number = 1000;
+    uint64_t number = 4000;
     log("Calculating bitcount for " << dec << number << " values");
 
     uint64_t count = bitcount(random_number, number);

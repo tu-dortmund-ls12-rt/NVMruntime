@@ -21,7 +21,7 @@ void app_init() {
 
     solve_system(system_ptr, right, RANGE);
 
-    print_system(system_ptr, right, RANGE);
+    // print_system(system_ptr, right, RANGE);
     asm volatile("svc #0");
 }
 
