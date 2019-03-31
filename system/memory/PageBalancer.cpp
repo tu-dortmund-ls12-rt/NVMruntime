@@ -8,7 +8,7 @@ PageBalancer PageBalancer::instance;
 PageBalancer::PageBalancer() {
     // Create nodes for all managed pages and add them to a tree
     uintptr_t managed_pages_begin =
-        (uintptr_t)(&__NVMSYMBOL__APPLICATION_TEXT_BEGIN);
+        (uintptr_t)(&__NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN);
     uintptr_t managed_pages_end =
         (uintptr_t)(&__NVMSYMBOL__APPLICATION_STACK_END);
 
@@ -29,12 +29,12 @@ PageBalancer::PageBalancer() {
 
 void PageBalancer::trigger_rebalance(void *vm_page) {
     uintptr_t managed_pages_begin =
-        (uintptr_t)(&__NVMSYMBOL__APPLICATION_TEXT_BEGIN);
+        (uintptr_t)(&__NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN);
     // Get the target node out of the RBTree
     phys_page_handle target = aes_tree.pop_minimum();
-    log("[RMAP] " << vm_page << "{" << MMU::instance.get_mapping(vm_page)
-                  << "} -> " << hex << target.phys_address << "{" << hex
-                  << target.mapped_vm_page << "}");
+    // log("[RMAP] " << vm_page << "{" << MMU::instance.get_mapping(vm_page)
+    //               << "} -> " << hex << target.phys_address << "{" << hex
+    //               << target.mapped_vm_page << "}");
 
     if (target.mapped_vm_page == (uintptr_t)vm_page) {
         // The page cannot be at any better physical location
@@ -44,6 +44,8 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
         aes_tree.insert(managed_pages + array_offset);
         return;
     }
+
+    rebalance_count++;
 
     // Determine the current physical address
     uintptr_t physical_address = (uintptr_t)MMU::instance.get_mapping(vm_page);
@@ -85,16 +87,19 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
 }
 
 void PageBalancer::enable_balancing() {
-    // log("RBTree manages " << aes_tree.get_element_count() << " elements");
+    log("Balancing " << aes_tree.get_element_count() << " pages");
     uintptr_t managed_pages_begin =
-        (uintptr_t)(&__NVMSYMBOL__APPLICATION_TEXT_BEGIN);
+        (uintptr_t)(&__NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN);
     uintptr_t managed_pages_end =
         (uintptr_t)(&__NVMSYMBOL__APPLICATION_STACK_END);
 
     for (; managed_pages_begin < managed_pages_end;
          managed_pages_begin += 0x1000) {
+        // log("Adding page " << (void *)managed_pages_begin << " to observe");
         WriteMonitor::instance.add_page_to_observe((void *)managed_pages_begin);
     }
     WriteMonitor::instance.set_notify_threshold(REBALANCE_THRESHOLD);
     WriteMonitor::instance.initialize();
 }
+
+uint64_t PageBalancer::get_rebalance_count() { return rebalance_count; }

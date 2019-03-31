@@ -1,7 +1,7 @@
 #include <system/data/RBTree.h>
 #include <system/memory/MMU.h>
 
-extern void *__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
+extern void *__NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN;
 extern void *__NVMSYMBOL__APPLICATION_STACK_END;
 extern void *__NVMSYMBOL_SPARE_VM_PAGE_BEGIN;
 
@@ -22,8 +22,12 @@ class PageBalancer {
 
     void trigger_rebalance(void *vm_page);
 
+    uint64_t get_rebalance_count();
+
    private:
     struct RBTree<phys_page_handle>::node managed_pages[MAX_MANAGED_PAGES];
 
     RBTree<phys_page_handle> aes_tree;
+
+    uint64_t rebalance_count = 0;
 };

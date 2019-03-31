@@ -80,8 +80,11 @@ bool WriteMonitor::handle_data_permission_interrupt() {
     MMU::instance.invalidate_tlb_entry((void *)fault_page);
 
     if (write_count[fault_page_number] >= notify_threshold) {
+        PMC::instance.enable_overflow_interrupt(0, false);
         write_count[fault_page_number] = 0;
         PageBalancer::instance.trigger_rebalance((void *)(far_el1 & ~0xFFF));
+        PMC::instance.write_event_counter(0, UINT32_MAX - MONITORING_RESOLUTION);
+        PMC::instance.enable_overflow_interrupt(0, true);
     }
 
     return true;

@@ -1,109 +1,86 @@
+#include "data.h"
 #include "system/data/RBTree.h"
 #include "system/service/logger.h"
 
 #include <system/driver/math.h>
-#include "data.h"
 
 // Some data inside BSS
-uint64_t bss_filler[1];
+uint64_t bss_filler[2048];
 
-void print_system(double **system, double *right, uint64_t range);
-
-void solve_system(double **system, double *right, uint64_t range);
+void fft(int8_t *target_array_real, int8_t *target_array_imaginary,
+         uint8_t *src_array, uint64_t el_count);
 
 void app_init() {
-    double *system_ptr[RANGE];
-    for (uint64_t i = 0; i < RANGE; i++) {
-        system_ptr[i] = system[i];
+    uint64_t horizon = 500;
+    log("Calculating fft for horizon of " << dec << horizon << " values");
+
+    int8_t target_real[horizon];
+    int8_t target_imaginary[horizon];
+    for (uint64_t i = 0; i < 20; i++) {
+        fft(target_real, target_imaginary, random_number, horizon);
     }
 
-    // print_system(system_ptr, right, RANGE);
+    // log("Printing result");
+    // for (uint64_t i = 0; i < horizon; i++) {
+    //     log("[" << dec << i << "]:\t " << dec << target_real[i] << " + " <<
+    //     dec
+    //             << target_imaginary[i] << "i");
+    // }
 
-    solve_system(system_ptr, right, RANGE);
-
-    // print_system(system_ptr, right, RANGE);
     asm volatile("svc #0");
 }
 
-void substract_lines(double **system, double *right, uint64_t target,
-                     uint64_t src, double fac, uint64_t range) {
-    double *target_line = system[target];
-    double *src_line = system[src];
-    for (uint64_t i = 0; i < range; i++) {
-        target_line[i] -= src_line[i] * fac;
+void fft(int8_t *target_array_real, int8_t *target_array_imaginary,
+         uint8_t *src_array, uint64_t el_count) {
+    if (el_count == 0) {
+        return;
     }
-    right[target] -= right[src] * fac;
-}
-
-void swap_lines(double **system, double *right, uint64_t target, uint64_t src,
-                uint64_t range) {
-    double *target_line = system[target];
-    double *src_line = system[src];
-    for (uint64_t i = 0; i < range; i++) {
-        double acc = target_line[i];
-        target_line[i] = src_line[i];
-        src_line[i] = acc;
+    if (el_count == 1) {
+        target_array_real[0] = src_array[0];
+        target_array_imaginary[0] = 0;
+        return;
     }
-    double acc = right[target];
-    right[target] = right[src];
-    right[src] = acc;
-}
 
-void solve_system(double **system, double *right, uint64_t range) {
-    // Outer loop over range
-    for (uint64_t range_reduce = 0; range_reduce < range; range_reduce++) {
-        // First check if line can be used to reduce
-        if (system[range_reduce][range_reduce] == 0) {
-            for (uint64_t left_over = range_reduce + 1; left_over < range;
-                 left_over++) {
-                if (system[left_over][range_reduce] != 0) {
-                    swap_lines(system, right, range_reduce, left_over, range);
-                    break;
-                }
-            }
-            if (system[range_reduce][range_reduce] == 0) {
-                log_error("System is not solvable");
-                return;
-            }
-        }
+    uint64_t l_size = el_count / 2;
+    uint64_t r_size = (el_count / 2) + (el_count % 2);
 
-        // Now eliminate the current column everywhere
-        for (uint64_t left_over = range_reduce + 1; left_over < range;
-             left_over++) {
-            double reduce_fac = system[left_over][range_reduce] /
-                                system[range_reduce][range_reduce];
-            substract_lines(system, right, left_over, range_reduce, reduce_fac,
-                            range);
+    uint8_t l_src[l_size];
+    uint8_t r_src[r_size];
+
+    for (uint64_t i = 0; i < el_count; i++) {
+        if (i % 2 == 0) {
+            l_src[i / 2] = src_array[i];
+        } else {
+            r_src[i / 2] = src_array[i];
         }
     }
 
-    // Now insert solved variables and eliminate them all
-    for (int64_t left_line = range - 1; left_line >= 0; left_line--) {
-        // Insert variables first
-        for (int64_t i = left_line + 1; i < (int64_t)range; i++) {
-            right[left_line] -= system[left_line][i] * right[i];
-            system[left_line][i] = 0;
-        }
+    int8_t l_target_real[l_size];
+    int8_t l_target_imaginary[l_size];
+    int8_t r_target_real[r_size];
+    int8_t r_target_imaginary[r_size];
 
-        right[left_line] /= system[left_line][left_line];
-        system[left_line][left_line] = 1;
-    }
-}
+    fft(l_target_real, l_target_imaginary, l_src, l_size);
+    fft(r_target_real, r_target_imaginary, r_src, r_size);
 
-void print_system(double **system, double *right, uint64_t range) {
-    log("Printing equation system:");
-    for (uint64_t y = 0; y < range; y++) {
-        for (uint64_t x = 0; x < range; x++) {
-            if (system[y][x] > 0.00001 || system[y][x] < -0.00001) {
-                if (system[y][x] == 1) {
-                } else if (system[y][x] == -1) {
-                    OutputStream::instance << "-";
-                } else {
-                    OutputStream::instance << system[y][x] << " ";
-                }
-                OutputStream::instance << "x" << dec << x << "\t";
-            }
-        }
-        OutputStream::instance << "=\t" << dec << right[y] << endl;
+    for (uint64_t i = 0; i < (el_count / 2); i++) {
+        double exp_real =
+            Math::cos(-2 * Math::pi() * (((double)(i)) / (el_count)));
+        double exp_im =
+            Math::sin(-2 * Math::pi() * (((double)(i)) / (el_count)));
+
+        target_array_real[i] =
+            l_target_real[i] +
+            (r_target_real[i] * exp_real - r_target_imaginary[i] * exp_im);
+        target_array_imaginary[i] =
+            l_target_imaginary[i] +
+            (r_target_real[i] * exp_im + r_target_imaginary[i] * exp_real);
+
+        target_array_real[i + (el_count / 2)] =
+            l_target_real[i] -
+            (r_target_real[i] * exp_real - r_target_imaginary[i] * exp_im);
+        target_array_imaginary[i + (el_count / 2)] =
+            l_target_imaginary[i] -
+            (r_target_real[i] * exp_im + r_target_imaginary[i] * exp_real);
     }
 }
