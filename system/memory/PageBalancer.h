@@ -36,13 +36,13 @@ class PageBalancer {
     /**
      * Size of each process variated domain in virtual memory pages
      */
-    unsigned long domain_size = 10;
+    unsigned long domain_size = 7;
     /**
      * This is a factor, which is used as increase for a often written page. It
      * originates from the write_counts for a the domains: 10050565, 8638776
      * The second domain has a higher favtor, cause it has less endurance
      */
-    unsigned long age_factors[2] = {100, 116};
+    unsigned long age_factors[3] = {100, 116,100};
 
 #endif
 #ifdef PRE_AGED_MEMORY
@@ -59,9 +59,9 @@ class PageBalancer {
                                    0,
                                    0,
                                    0,
-                                   ((85 * 10 * 116) / 15),
-                                   ((149 * 10 * 116) / 15),
-                                   ((17 * 10 * 116) / 15),
+                                   ((85 * 5 * 116) / 15),
+                                   ((149 * 5 * 116) / 15),
+                                   ((17 * 5 * 116) / 15),
                                    0,
                                    0,
                                    0,
