@@ -42,6 +42,7 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
         unsigned int array_offset =
             (target.phys_address - managed_pages_begin) / 0x1000;
         aes_tree.insert(managed_pages + array_offset);
+        //TODO increase aec anyway
         return;
     }
 

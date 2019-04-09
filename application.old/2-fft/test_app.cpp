@@ -16,11 +16,14 @@ void app_init() {
 
     int8_t target_real[horizon];
     int8_t target_imaginary[horizon];
+    // for (uint64_t i = 0; i < 20; i++) {
     fft(target_real, target_imaginary, random_number, horizon);
+    // }
 
     // log("Printing result");
     // for (uint64_t i = 0; i < horizon; i++) {
-    //     log("[" << dec << i << "]:\t " << dec << target_real[i] << " + " << dec
+    //     log("[" << dec << i << "]:\t " << dec << target_real[i] << " + " <<
+    //     dec
     //             << target_imaginary[i] << "i");
     // }
 
