@@ -13,7 +13,12 @@ PageBalancer::PageBalancer() {
         (uintptr_t)(&__NVMSYMBOL__APPLICATION_STACK_END);
 
     for (uint64_t i = 0; i < MAX_MANAGED_PAGES; i++) {
+#ifdef PRE_AGED_MEMORY
+        managed_pages[i] = {managed_pages_begin, managed_pages_begin,
+                            pre_aging[i]};
+#else
         managed_pages[i] = {managed_pages_begin, managed_pages_begin, 0};
+#endif
         aes_tree.insert(managed_pages + i);
         managed_pages_begin += 0x1000;
         if (managed_pages_begin == managed_pages_end) {
@@ -41,8 +46,18 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
         // Reinsert the page into the tree
         unsigned int array_offset =
             (target.phys_address - managed_pages_begin) / 0x1000;
-        aes_tree.insert(managed_pages + array_offset);
-        //TODO increase aec anyway
+
+        struct RBTree<phys_page_handle>::node *self =
+            managed_pages + array_offset;
+
+#ifdef RESPECT_PROCESS_VARIATION
+        self->value.access_count += age_factors[array_offset / domain_size];
+#else
+        self->value.access_count++;
+#endif
+
+        aes_tree.insert(self);
+        // TODO increase aec anyway
         return;
     }
 
@@ -80,9 +95,16 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
         o_page_ptr[i] = spare[i];
     }
 
-    target.access_count++;
     unsigned int target_array_offset =
         (target.phys_address - managed_pages_begin) / 0x1000;
+#ifdef RESPECT_PROCESS_VARIATION
+    target.access_count += age_factors[target_array_offset / domain_size];
+    // log("Rebalancing to " << hex << target.phys_address
+    //                       << ", assuming process factor of " << dec
+    //                       << age_factors[target_array_offset / domain_size]);
+#else
+    target.access_count++;
+#endif
     managed_pages[target_array_offset].value = target;
     aes_tree.insert(managed_pages + target_array_offset);
 }

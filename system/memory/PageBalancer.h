@@ -30,4 +30,43 @@ class PageBalancer {
     RBTree<phys_page_handle> aes_tree;
 
     uint64_t rebalance_count = 0;
+
+#ifdef RESPECT_PROCESS_VARIATION
+
+    /**
+     * Size of each process variated domain in virtual memory pages
+     */
+    unsigned long domain_size = 10;
+    /**
+     * This is a factor, which is used as increase for a often written page. It
+     * originates from the write_counts for a the domains: 10050565, 8638776
+     * The second domain has a higher favtor, cause it has less endurance
+     */
+    unsigned long age_factors[2] = {100, 116};
+
+#endif
+#ifdef PRE_AGED_MEMORY
+    // Pre aging of 20*fft run
+
+    unsigned long pre_aging[20] = {0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   ((85 * 10 * 116) / 15),
+                                   ((149 * 10 * 116) / 15),
+                                   ((17 * 10 * 116) / 15),
+                                   0,
+                                   0,
+                                   0,
+                                   0,
+                                   0};
+
+#endif
 };
