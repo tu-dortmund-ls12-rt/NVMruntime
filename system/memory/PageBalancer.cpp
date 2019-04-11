@@ -99,9 +99,9 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
         (target.phys_address - managed_pages_begin) / 0x1000;
 #ifdef RESPECT_PROCESS_VARIATION
     target.access_count += age_factors[target_array_offset / domain_size];
-    log("Rebalancing to " << hex << target.phys_address
-                          << ", assuming process factor of " << dec
-                          << age_factors[target_array_offset / domain_size] << " to " << target.access_count);
+    // log("Rebalancing to " << hex << target.phys_address
+    //                       << ", assuming process factor of " << dec
+    //                       << age_factors[target_array_offset / domain_size] << " to " << target.access_count);
 #else
     target.access_count++;
 #endif

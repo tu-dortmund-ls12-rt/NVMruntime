@@ -16,8 +16,8 @@ void app_init() {
 
     int8_t target_real[horizon];
     int8_t target_imaginary[horizon];
-    // for (uint64_t i = 0; i < 20; i++) {
-    fft(target_real, target_imaginary, random_number, horizon);
+    // for (uint64_t i = 0; i < 100; i++) {
+        fft(target_real, target_imaginary, random_number, horizon);
     // }
 
     // log("Printing result");
