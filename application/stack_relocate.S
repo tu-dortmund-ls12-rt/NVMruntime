@@ -1,6 +1,3 @@
-//The stack pointer must be aligned on 16 bytes
-#define RELOCATION_STEP 0x20
-
 .global relocate_stack
 .global __current_stack_base_ptr
 .global __virtual_stack_begin
@@ -26,22 +23,22 @@ __virtual_stack_end:
  *   x29 is the frame-pointer, relocate it by hand
  *   x30 is the link register, don't relocate it, cause it's code
  */
-relocate_stack:
+relocate_stack: //x9,x11
     //Collect region informatiom
-    adr x15, __virtual_stack_end
-    ldr x9,[x15]
     adr x15, __virtual_stack_begin
     ldr x10,[x15]
     //The current base_ptr
     adr x11, __current_stack_base_ptr
     ldr x12, [x11]
 
+    //This is used to compare if a relocation is needed
+    add x11,x10,#RELOCATION_STEP
+
     //Copy target
     mov x13,sp
 
     //Increase the stack pointer
     sub sp,sp, #RELOCATION_STEP
-    mov x15,sp
 
     //Start the copy of the stack
 begin_loop:
@@ -55,14 +52,34 @@ loop_continue:
 
     sub x29,x29,#RELOCATION_STEP
     sub x12,x12,#RELOCATION_STEP
-    str x12,[x11]
 
+    //Check if the new base will reach the shadow area
+    cmp x12,x10
+    bgt finish
+    add x12,x12,#REAL_STACK_SIZE
+    add sp,sp,#REAL_STACK_SIZE
+
+    cmp x29,x10
+    bgt finish
+    add x29,x29,#REAL_STACK_SIZE
+
+finish:
+    adr x11, __current_stack_base_ptr
+    str x12,[x11]
     ret
 
 relocate_ptr:
     cmp x14,x12
     bge loop_continue
-    cmp x14,x15
+    cmp x14,x10
     ble loop_continue
     sub x14,x14,#RELOCATION_STEP
+
+    //Check if the new base will reach the shadow area
+    cmp x12,x11
+    bgt loop_continue
+    //Perform a relocation if possivle
+    cmp x14,x10
+    bgt loop_continue
+    add x14,x14,#REAL_STACK_SIZE
     b loop_continue

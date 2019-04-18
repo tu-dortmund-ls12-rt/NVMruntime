@@ -2,7 +2,8 @@
 #define SYSTEM_CONFIG
 
 #define DRAM_SIZE 268435456  // 256MB
-#define STACK_SIZE (16384*2)
+#define REAL_STACK_SIZE 16384
+#define STACK_SIZE (REAL_STACK_SIZE*2)
 
 #define MONITOR_CAPACITY 256
 #define SYSTEM_OFFSET 0x80000000
@@ -17,6 +18,10 @@
 // #define PRE_AGED_MEMORY
 
 #define STACK_BALANCIMG
+//The stack pointer must be aligned on 16 bytes
+// #define RELOCATION_STEP 0x20
+#define RELOCATION_STEP 0x100
+
 #define TARGET_STACK_VADDRESS 0x0000000A00000000UL
 
 #endif
