@@ -20,7 +20,7 @@ void app_init() {
 
     uint64_t current_base;
     asm volatile(
-        "adr x0, current_stack_base_ptr;"
+        "adr x0, __current_stack_base_ptr;"
         "ldr %0,[x0]"
         : "=r"(current_base)::"x0");
 
@@ -30,7 +30,7 @@ void app_init() {
     var_p(&t1, &t2);
 
     asm volatile(
-        "adr x0, current_stack_base_ptr;"
+        "adr x0, __current_stack_base_ptr;"
         "ldr %0,[x0]"
         : "=r"(current_base)::"x0");
 

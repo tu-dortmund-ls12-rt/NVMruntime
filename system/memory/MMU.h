@@ -32,6 +32,12 @@ class MMU {
     void *get_mapping(void *vm_page);
 
     void set_page_mapping(void *vm_page, void *phys_page);
+    /**
+     * This function sets mapping according to shadow the stack
+     */
+    void set_stack_page_mapping(void *vm_page, void *phys_page);
+    void set_stack_access_permission(void *vm_page, uint64_t ap);
+    void *get_stack_mapping(void *vm_page);
 };
 
 #endif

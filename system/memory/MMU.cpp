@@ -3,8 +3,6 @@
 
 MMU MMU::instance;
 
-// #define DRAM_SIZE 1073741824  // Maximum 4GB
-#define DRAM_SIZE 268435456  // 256MB
 
 /**
  * Level 0 Table controls 512GB memory
@@ -15,17 +13,22 @@ uint64_t level0_table[1] __attribute__((aligned(4096)));
 /**
  * Level 1 Table controls 1GB memory each
  * =>6 Entry -- 6GB
+ * =>40 Entry
+ * The virtual stack is at 40GB
  * The DRAM begins at 2GB Boundary (0x80000000), with 4GB DRAM we need 6 GB VM
  * Spave in total
  */
-uint64_t level1_table[6] __attribute__((aligned(4096)));
+uint64_t level1_table[50] __attribute__((aligned(4096)));
 
 /**
  * Level 2 Table controls 2MB memory each
  * =>2048 Entry -- 4GB
  * L2 Table begins at 2GB Boundary
+ * =>512 entries (1GB for stack)
  */
 uint64_t level2_table[4096] __attribute__((aligned(4096)));
+uint64_t level2_table_stack[512]
+    __attribute__((aligned(4096)));
 
 /**
  * Level 3 Table controls 4kb memory each
@@ -33,6 +36,7 @@ uint64_t level2_table[4096] __attribute__((aligned(4096)));
  * L3 Table begins at 2GB Boundary
  */
 uint64_t level3_table[DRAM_SIZE / 4096] __attribute__((aligned(4096)));
+uint64_t level3_table_stack[STACK_SIZE / 4096] __attribute__((aligned(4096)));
 
 void MMU::setup_pagetables() {
     /**
@@ -77,6 +81,8 @@ void MMU::setup_pagetables() {
         // level2_table, redirecting to level2 table
         level1_table[i] = (0b11) | (((uint64_t)level2_table) + i * 512 * 8);
     }
+    //The stack l1 table is 1 gb at 39GB
+    level1_table[40] = (0b11) | (((uint64_t)level2_table_stack));
 
     log("Setting UP Level 2 Table");
     // First 2 GB of Level 2 Table are device memory blocks
@@ -95,6 +101,11 @@ void MMU::setup_pagetables() {
         }
     }
     OutputStream::instance << endl;
+    // Level 2 Table Stack: Completely redirecting to Level 3 Stack
+    for (uint64_t i = 0; i <= (STACK_SIZE/2097152); i++) {
+        level2_table_stack[i] =
+            (0b11) | (((uint64_t)level3_table_stack) + i * 512 * 8);
+    }
 
     log("Setting UP Level 3 Table");
     // Level 3 Table: Block entries from Offset 0x80000000UL
@@ -106,6 +117,10 @@ void MMU::setup_pagetables() {
         }
     }
     OutputStream::instance << endl;
+    for (uint64_t i = 0; i <= (STACK_SIZE / 4096); i++) {
+        level3_table_stack[i] =
+            (0b11) | (0b111001001 << 2) | (TARGET_STACK_VADDRESS + (i * 0x1000));
+    }
 
     // Finally set the ttbr0 register to level 0 table
     asm volatile("msr ttbr0_el1, %0" ::"r"(level0_table));
@@ -274,4 +289,76 @@ void MMU::set_page_mapping(void *vm_page, void *phys_page) {
     uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
     (*l3_desc) &= ~0xFFFFFFFFF000;                         // Clear mapping
     (*l3_desc) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping
+}
+
+void MMU::set_stack_page_mapping(void *vm_page, void *phys_page){
+    // Check if it is a mapped stack page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < TARGET_STACK_VADDRESS) {
+        log_error("Trying to get the mapping for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= TARGET_STACK_VADDRESS + (STACK_SIZE/2)) {
+        log_error(
+            "System does not manage this page (maybe extend the managed stack "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    // log_info("Mapping " << hex << vm_page << " -> " << hex << phys_page);
+
+    uint64_t *l3_desc = &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
+    // log_info("Prev mapped to " << ((void *)((*l3_desc) & 0xFFFFFFFFF000)));
+    (*l3_desc) &= ~0xFFFFFFFFF000;                         // Clear mapping
+    (*l3_desc) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping    
+    uint64_t *l3_desc_shadow = &level3_table_stack[(page - TARGET_STACK_VADDRESS + (STACK_SIZE /2)) / 0x1000];
+    // log_info("Prev mapped to " << ((void *)((*l3_desc_shadow) & 0xFFFFFFFFF000)));
+    (*l3_desc_shadow) &= ~0xFFFFFFFFF000;                         // Clear mapping
+    (*l3_desc_shadow) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping    
+}
+
+void MMU::set_stack_access_permission(void *vm_page, uint64_t ap){
+    // Check if it is a mapped stack page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < TARGET_STACK_VADDRESS) {
+        log_error("Trying to get the mapping for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= TARGET_STACK_VADDRESS + (STACK_SIZE/2)) {
+        log_error(
+            "System does not manage this page (maybe extend the managed stack "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    uint64_t *l3_desc = &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
+    *l3_desc &= ~(0b11 << 6);
+    *l3_desc |= (ap & 0b11) << 6;
+    uint64_t *l3_desc_shadow = &level3_table_stack[(page - TARGET_STACK_VADDRESS + (STACK_SIZE /2)) / 0x1000];
+    *l3_desc_shadow &= ~(0b11 << 6);
+    *l3_desc_shadow |= (ap & 0b11) << 6;
+}
+
+void *MMU::get_stack_mapping(void *vm_page) {
+    // Check if it is a mapped dram page
+    uintptr_t page = (uintptr_t)vm_page;
+    if (page < TARGET_STACK_VADDRESS) {
+        log_error("Trying to get the mapping for no dram page " << vm_page);
+        while (1)
+            ;
+    }
+    if (page >= TARGET_STACK_VADDRESS + STACK_SIZE) {
+        log_error(
+            "System does not manage this page (maybe extend the managed "
+            "memory)");
+        while (1)
+            ;
+    }
+
+    uint64_t *l3_desc = &level3_table_stack[(page - 0x80000000UL) / 0x1000];
+    return (void *)((*l3_desc) & 0xFFFFFFFFF000);
 }

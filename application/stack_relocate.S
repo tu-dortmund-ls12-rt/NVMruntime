@@ -2,10 +2,20 @@
 #define RELOCATION_STEP 0x20
 
 .global relocate_stack
-.global current_stack_base_ptr
+.global __current_stack_base_ptr
+.global __virtual_stack_begin
+.global __virtual_stack_end
 
 .data
-current_stack_base_ptr: .long 0x0
+__current_stack_base_ptr: 
+    .long 0x0
+    .long 0x0
+__virtual_stack_begin: 
+    .long 0x0
+    .long 0x0
+__virtual_stack_end: 
+    .long 0x0
+    .long 0x0
 
 .text
 /**
@@ -18,10 +28,12 @@ current_stack_base_ptr: .long 0x0
  */
 relocate_stack:
     //Collect region informatiom
-    adr x9, __NVMSYMBOL__APPLICATION_STACK_END
-    adr x10, __NVMSYMBOL__APPLICATION_STACK_BEGIN
+    adr x15, __virtual_stack_end
+    ldr x9,[x15]
+    adr x15, __virtual_stack_begin
+    ldr x10,[x15]
     //The current base_ptr
-    adr x11, current_stack_base_ptr
+    adr x11, __current_stack_base_ptr
     ldr x12, [x11]
 
     //Copy target
