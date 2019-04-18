@@ -1,0 +1,45 @@
+//The stack pointer must be aligned on 16 bytes
+#define RELOCATION_STEP 0x20
+
+.global relocate_stack
+.global current_stack_base_ptr
+
+.data
+current_stack_base_ptr: .long 0x0
+
+.text
+/**
+ *   Care about all registers:
+ *   x0-x7 are passed arguments, does not apply here
+ *   x9-x15 are caller-saved, just use them here
+ *   x19-x29 are callee-saved, don't touch them
+ *   x29 is the frame-pointer, relocate it by hand
+ *   x30 is the link register, don't relocate it, cause it's code
+ */
+relocate_stack:
+    //Collect region informatiom
+    adr x9, __NVMSYMBOL__APPLICATION_STACK_END
+    adr x10, __NVMSYMBOL__APPLICATION_STACK_BEGIN
+    //The current base_ptr
+    adr x11, current_stack_base_ptr
+    ldr x12, [x11]
+
+    //Copy target
+    mov x13,sp
+
+    //Increase the stack pointer
+    sub sp,sp, #RELOCATION_STEP
+
+    //Start the copy of the stack
+begin_loop:
+    ldr x14,[x13]
+    str x14,[x13,#-RELOCATION_STEP]
+    add x13,x13,#0x8
+    cmp x13,x12
+    blt begin_loop
+
+    sub x29,x29,#RELOCATION_STEP
+    sub x12,x12,#RELOCATION_STEP
+    str x12,[x11]
+
+    ret

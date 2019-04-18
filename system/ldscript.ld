@@ -34,6 +34,8 @@ SECTIONS
         build/system/data/RBTree.o(*)
 
         build/system/driver/math.o(.text)
+
+        build/application/stack_relocate.o(.text)
     }
     __INTERNAL_CODE_END = .;
     
@@ -70,6 +72,8 @@ SECTIONS
         build/system/data/RBTree.o(*)
 
         build/system/driver/math.o(*)
+
+        build/application/stack_relocate.o(*)
     }
     __NVMSYMBOL__DRIVER_END = .;
 

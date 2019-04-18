@@ -118,8 +118,10 @@ extern "C" void init_system_c() {
 
     asm volatile(
         "ldr x0, =__stack_top;"
+        "adr x1, current_stack_base_ptr;"
+        "str x0,[x1];"
         "msr sp_el0, x0;" ::
-            : "x0");
+            : "x0","x1");
     asm volatile("msr elr_el1, %0;" ::"r"(&app_init));
     uint64_t spsr = 0;
     asm volatile("mrs %0, spsr_el1" : "=r"(spsr));
