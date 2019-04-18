@@ -11,8 +11,12 @@ void var_p(uint64_t *v1, uint64_t *v2);
 
 void app_init() {
     log_info("Creating local variables");
+    volatile uint64_t test_arr[5] = {51, 52, 53, 54, 55};
     uint64_t t1 = 42;
     uint64_t t2 = 182600;
+
+    volatile uint64_t *ptr = (volatile uint64_t *)&t1;
+    log_info("PTR (" << (void *)ptr << ") val: " << dec << *ptr);
 
     uint64_t current_base;
     asm volatile(
@@ -22,7 +26,7 @@ void app_init() {
 
     log_info("Current base pointer is at " << hex << current_base);
 
-    // relocate_stack();
+    relocate_stack();
     var_p(&t1, &t2);
 
     asm volatile(
@@ -30,9 +34,13 @@ void app_init() {
         "ldr %0,[x0]"
         : "=r"(current_base)::"x0");
 
+    log_info("PTR (" << (void *)ptr << ") val: " << dec << *ptr);
+
     log_info("Current base pointer is at " << hex << current_base);
 
     log_info("Jumping back and exit");
+
+    log_info(dec << test_arr[2]);
 
     asm volatile("svc #0");
 }

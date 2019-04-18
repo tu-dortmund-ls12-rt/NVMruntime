@@ -29,10 +29,13 @@ relocate_stack:
 
     //Increase the stack pointer
     sub sp,sp, #RELOCATION_STEP
+    mov x15,sp
 
     //Start the copy of the stack
 begin_loop:
     ldr x14,[x13]
+    b relocate_ptr
+loop_continue:
     str x14,[x13,#-RELOCATION_STEP]
     add x13,x13,#0x8
     cmp x13,x12
@@ -43,3 +46,11 @@ begin_loop:
     str x12,[x11]
 
     ret
+
+relocate_ptr:
+    cmp x14,x12
+    bge loop_continue
+    cmp x14,x15
+    ble loop_continue
+    sub x14,x14,#RELOCATION_STEP
+    b loop_continue
