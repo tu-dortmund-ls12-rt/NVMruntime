@@ -20,7 +20,7 @@
 #define STACK_BALANCIMG
 //The stack pointer must be aligned on 16 bytes
 // #define RELOCATION_STEP 0x20
-#define RELOCATION_STEP 0x100
+#define RELOCATION_STEP 0x40
 
 #define TARGET_STACK_VADDRESS 0x0000000A00000000UL
 

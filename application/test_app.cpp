@@ -14,39 +14,20 @@ void do_bitcount();
 extern uint64_t __current_stack_base_ptr;
 
 void app_init() {
-    volatile uint64_t tests[5] = {1, 2, 3, 4, 5};
-    volatile uint64_t test = 52;
-    volatile uint64_t *ptr = &test;
-    while (1) {
-        log_info("\n(" << (void *)ptr << ") - [" << dec << *ptr << "]");
-        log_info("Base at " << hex << __current_stack_base_ptr);
-        relocate_stack();
-    }
-    do_bitcount();
-    log_info(tests[1]);
-    asm volatile("svc #0");
-}
-
-void do_bitcount() {
-    uint64_t number = 4000;
-    log("Calculating bitcount for " << dec << number << " values");
-
-    uint64_t count = bitcount(random_number, number);
-
-    log("Counted " << count << " bits");
-}
-
-uint64_t bitcount(uint8_t *data, uint64_t el_count) {
     uint64_t result = 0;
+    uint64_t el_count = 8000;
     for (uint64_t i = 0; i < el_count; i++) {
-        result += (data[i] & (0b1 << 0)) != 0;
-        result += (data[i] & (0b1 << 1)) != 0;
-        result += (data[i] & (0b1 << 2)) != 0;
-        result += (data[i] & (0b1 << 3)) != 0;
-        result += (data[i] & (0b1 << 4)) != 0;
-        result += (data[i] & (0b1 << 5)) != 0;
-        result += (data[i] & (0b1 << 6)) != 0;
-        result += (data[i] & (0b1 << 7)) != 0;
+        if (i % 40 == 0) {
+            relocate_stack();
+        }
+        result += (random_number[i] & (0b1 << 0)) != 0;
+        result += (random_number[i] & (0b1 << 1)) != 0;
+        result += (random_number[i] & (0b1 << 2)) != 0;
+        result += (random_number[i] & (0b1 << 3)) != 0;
+        result += (random_number[i] & (0b1 << 4)) != 0;
+        result += (random_number[i] & (0b1 << 5)) != 0;
+        result += (random_number[i] & (0b1 << 6)) != 0;
+        result += (random_number[i] & (0b1 << 7)) != 0;
     }
-    return result;
+    asm volatile("svc #0");
 }
