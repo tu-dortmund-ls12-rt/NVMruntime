@@ -5,6 +5,7 @@
 #include <system/driver/PMC.h>
 #include <system/memory/MMU.h>
 #include <system/memory/PageBalancer.h>
+#include <system/memory/StackBalancer.h>
 
 extern GIC400_Distributor gic_distributor;
 
@@ -83,16 +84,21 @@ bool WriteMonitor::handle_data_permission_interrupt() {
         PMC::instance.enable_overflow_interrupt(0, false);
         write_count[fault_page_number] = 0;
         PageBalancer::instance.trigger_rebalance((void *)(far_el1 & ~0xFFF));
-        PMC::instance.write_event_counter(0, UINT32_MAX - MONITORING_RESOLUTION);
+        PMC::instance.write_event_counter(0,
+                                          UINT32_MAX - MONITORING_RESOLUTION);
         PMC::instance.enable_overflow_interrupt(0, true);
     }
 
     return true;
 }
 
-void WriteMonitor::handle_pmc_0_interrupt() {
-    // log("PMC 0 overflowed");
-    // Simply reset all acces permissions to generate interrupts
+void WriteMonitor::handle_pmc_0_interrupt(uint64_t *saved_stack_base) {
+// log("PMC 0 overflowed");
+// Simply reset all acces permissions to generate interrupts
+#ifdef STACK_BALANCIMG
+    StackBalancer::instance.trigger_on_interrupt(saved_stack_base);
+#endif
+
     set_all_observed_pages(true);
     PMC::instance.write_event_counter(0, UINT32_MAX - MONITORING_RESOLUTION);
 }

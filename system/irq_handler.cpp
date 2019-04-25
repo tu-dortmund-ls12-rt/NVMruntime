@@ -44,9 +44,9 @@ extern "C" void handle_irq_lowlevel_irq() {
         ;
 }
 
-extern "C" void handle_irq_lowlevel_fiq() {
+extern "C" void handle_irq_lowlevel_fiq(uint64_t *saved_stack_base) {
     // log("FIQ Occured");
-    GIC_Interrupts::instance.trigger_irq();
+    GIC_Interrupts::instance.trigger_irq(saved_stack_base);
 }
 
 extern "C" void handle_irq_lowlevel_error() {

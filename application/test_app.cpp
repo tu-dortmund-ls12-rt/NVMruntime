@@ -14,12 +14,17 @@ void do_bitcount();
 extern uint64_t __current_stack_base_ptr;
 
 void app_init() {
+    do_bitcount();
+    asm volatile("svc #0");
+}
+
+void do_bitcount() {
     uint64_t result = 0;
     uint64_t el_count = 8000;
     for (uint64_t i = 0; i < el_count; i++) {
-        if (i % 40 == 0) {
-            relocate_stack();
-        }
+        // if (i % 40 == 0) {
+        //     relocate_stack();
+        // }
         result += (random_number[i] & (0b1 << 0)) != 0;
         result += (random_number[i] & (0b1 << 1)) != 0;
         result += (random_number[i] & (0b1 << 2)) != 0;
@@ -29,5 +34,4 @@ void app_init() {
         result += (random_number[i] & (0b1 << 6)) != 0;
         result += (random_number[i] & (0b1 << 7)) != 0;
     }
-    asm volatile("svc #0");
 }

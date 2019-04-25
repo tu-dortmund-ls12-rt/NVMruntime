@@ -21,7 +21,7 @@ class WriteMonitor {
 
     bool handle_data_permission_interrupt();
 
-    void handle_pmc_0_interrupt();
+    void handle_pmc_0_interrupt(uint64_t *saved_stack_base);
 
    private:
     uint64_t write_count[MONITOR_CAPACITY];
