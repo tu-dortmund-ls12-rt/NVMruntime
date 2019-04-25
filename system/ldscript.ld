@@ -36,7 +36,7 @@ SECTIONS
 
         build/system/driver/math.o(.text)
 
-        build/application/stack_relocate.o(.text)
+        build/system/memory/stack_relocate.o(.text)
     }
     __INTERNAL_CODE_END = .;
     
@@ -76,7 +76,7 @@ SECTIONS
 
         build/system/driver/math.o(*)
 
-        build/application/stack_relocate.o(*)
+        build/system/memory/stack_relocate.o(*)
     }
     __NVMSYMBOL__DRIVER_END = .;
 

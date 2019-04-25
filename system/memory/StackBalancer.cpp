@@ -1,6 +1,7 @@
 #include "StackBalancer.h"
 #include <system/service/logger.h>
 #include "MMU.h"
+#include "stack_relocate.h"
 
 StackBalancer StackBalancer::instance;
 
@@ -58,11 +59,24 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
     // while (1)
     //     ;
 
+    if (performing_balane) {
+        return;
+    }
     if (!performed_since_last_irq) {
         perform_irq_relocation(saved_stack_base);
         relocation_coint_irq++;
     } else {
         performed_since_last_irq = false;
+    }
+}
+
+void StackBalancer::hint_relocation() {
+    if (!performed_since_last_irq) {
+        performing_balane = true;
+        performed_since_last_irq = true;
+        relocate_stack();
+        relocation_count_syn++;
+        performing_balane = false;
     }
 }
 

@@ -40,6 +40,9 @@ relocate_stack: //x9,x11
     //Increase the stack pointer
     sub sp,sp, #RELOCATION_STEP
 
+    //Set X9 to the real shadow base
+    sub x9,x10,#REAL_STACK_SIZE
+
     //Start the copy of the stack
 begin_loop:
     ldr x14,[x13]
@@ -55,12 +58,12 @@ loop_continue:
 
     //Check if the new base will reach the shadow area
     cmp x12,x10
-    bgt finish
+    bge finish
     add x12,x12,#REAL_STACK_SIZE
     add sp,sp,#REAL_STACK_SIZE
 
     cmp x29,x10
-    bgt finish
+    bge finish
     add x29,x29,#REAL_STACK_SIZE
 
 finish:
@@ -71,15 +74,15 @@ finish:
 relocate_ptr:
     cmp x14,x12
     bge loop_continue
-    cmp x14,x10 //TODO compare with the shadow base
+    cmp x14,x9
     ble loop_continue
     sub x14,x14,#RELOCATION_STEP
 
     //Check if the new base will reach the shadow area
     cmp x12,x11
-    bgt loop_continue
+    bge loop_continue
     //Perform a relocation if possivle
     cmp x14,x10 // TODO(maybe only relocate if really lesss)
-    bgt loop_continue
+    bge loop_continue
     add x14,x14,#REAL_STACK_SIZE
     b loop_continue

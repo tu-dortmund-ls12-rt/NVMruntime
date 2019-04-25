@@ -13,6 +13,8 @@ class StackBalancer {
 
     void trigger_on_interrupt(uint64_t *saved_stack_base);
 
+    void hint_relocation();
+
     void print_statistic();
 
    private:
@@ -21,7 +23,8 @@ class StackBalancer {
     uint64_t relocation_count_syn = 0;
     uint64_t relocation_coint_irq = 0;
 
-    bool performed_since_last_irq=false;
+    bool performed_since_last_irq = false;
+    bool performing_balane = false;
 };
 
 #endif
