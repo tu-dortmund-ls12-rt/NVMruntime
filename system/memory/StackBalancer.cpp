@@ -57,10 +57,83 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
 
     // while (1)
     //     ;
+
+    if (!performed_since_last_irq) {
+        perform_irq_relocation(saved_stack_base);
+        relocation_coint_irq++;
+    } else {
+        performed_since_last_irq = false;
+    }
+}
+
+void StackBalancer::perform_irq_relocation(uint64_t *saved_stack_base) {
+    /**
+     * Basically do the same steps here, than in the synchronous version, just
+     * this time in c :D
+     */
+    // Applications stack pointer
+    uint64_t app_sp;
+    asm volatile("mrs %0, sp_el0" : "=r"(app_sp));
+    // log_info("App sp was at " << hex << app_sp);
+
+    extern uint64_t __virtual_stack_begin;
+    uint64_t __shadow_stack_begin = __virtual_stack_begin - REAL_STACK_SIZE;
+    extern uint64_t __current_stack_base_ptr;
+
+    bool will_wrap =
+        __current_stack_base_ptr < (__virtual_stack_begin + RELOCATION_STEP);
+
+    // Relocate stack pointer
+    app_sp -= RELOCATION_STEP;
+
+    // Copy the old stack
+    for (uint64_t target = app_sp + RELOCATION_STEP;
+         target < __current_stack_base_ptr; target += 8) {
+        uint64_t lword = *((uint64_t *)(target));
+        // Check if the word has to be relocated
+        if (lword < __current_stack_base_ptr && lword >= __shadow_stack_begin) {
+            lword -= RELOCATION_STEP;
+        }
+        // Check if the word is in the shadow
+        if (will_wrap && lword < __virtual_stack_begin &&
+            lword >= __shadow_stack_begin) {
+            lword += REAL_STACK_SIZE;
+        }
+        *((uint64_t *)(target - RELOCATION_STEP)) = lword;
+    }
+
+    // Relocate all the current applications registers
+    for (uint64_t i = 0; i < 31; i++) {
+        uint64_t lword = saved_stack_base[i];
+        // Check if the word has to be relocated
+        if (lword < __current_stack_base_ptr && lword >= __shadow_stack_begin) {
+            lword -= RELOCATION_STEP;
+        }
+        // Check if the word is in the shadow
+        if (will_wrap && lword < __virtual_stack_begin &&
+            lword >= __shadow_stack_begin) {
+            lword += REAL_STACK_SIZE;
+        }
+        saved_stack_base[i] = lword;
+    }
+
+    // Relocate the new stack base
+    __current_stack_base_ptr -= RELOCATION_STEP;
+    if (will_wrap) {
+        __current_stack_base_ptr += REAL_STACK_SIZE;
+    }
+
+    if (will_wrap && app_sp < __virtual_stack_begin) {
+        app_sp += REAL_STACK_SIZE;
+    }
+
+    // Write back the stack pointer
+    asm volatile("msr sp_el0, %0" ::"r"(app_sp));
+    // log_info("Done IRQ reloc");
 }
 
 void StackBalancer::print_statistic() {
     log("[Stack Balancer] Syn RLCs: " << dec << relocation_count_syn
-                                           << " / IRQ RLCs: " << dec
-                                           << relocation_coint_irq);
+                                      << " / IRQ RLCs: " << dec
+                                      << relocation_coint_irq);
 }

@@ -20,6 +20,8 @@ class StackBalancer {
 
     uint64_t relocation_count_syn = 0;
     uint64_t relocation_coint_irq = 0;
+
+    bool performed_since_last_irq=false;
 };
 
 #endif

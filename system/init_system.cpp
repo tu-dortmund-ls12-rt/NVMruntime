@@ -130,6 +130,8 @@ extern "C" void init_system_c() {
         MMU::instance.set_access_permission(
             (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     }
+
+#ifdef STACK_BALANCIMG
     for (uintptr_t app_page = (uintptr_t)TARGET_STACK_VADDRESS;
          app_page < (uintptr_t)(TARGET_STACK_VADDRESS + (STACK_SIZE / 2));
          app_page += 0x1000) {
@@ -139,6 +141,8 @@ extern "C" void init_system_c() {
         MMU::instance.set_stack_access_permission(
             (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);
     }
+#endif
+
     MMU::instance.flush_tlb();
 
     log("Calling target app (with swapped stack pointer on EL0) ["

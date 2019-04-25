@@ -71,7 +71,7 @@ finish:
 relocate_ptr:
     cmp x14,x12
     bge loop_continue
-    cmp x14,x10
+    cmp x14,x10 //TODO compare with the shadow base
     ble loop_continue
     sub x14,x14,#RELOCATION_STEP
 
@@ -79,7 +79,7 @@ relocate_ptr:
     cmp x12,x11
     bgt loop_continue
     //Perform a relocation if possivle
-    cmp x14,x10
+    cmp x14,x10 // TODO(maybe only relocate if really lesss)
     bgt loop_continue
     add x14,x14,#REAL_STACK_SIZE
     b loop_continue
