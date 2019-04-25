@@ -1,7 +1,8 @@
 #include "syscall.h"
+#include "memory/PageBalancer.h"
+#include "memory/StackBalancer.h"
 #include "memory/WriteMonitor.h"
 #include "system/service/logger.h"
-#include "memory/PageBalancer.h"
 
 Syscall Syscall::instance;
 
@@ -14,6 +15,10 @@ void Syscall::stop_system() {
 #ifdef DO_REBALANCING
     log("Rebalance count:" << dec
                            << PageBalancer::instance.get_rebalance_count());
+#endif
+
+#ifdef STACK_BALANCIMG
+    StackBalancer::instance.print_statistic();
 #endif
     log("ByeBye");
     while (1)

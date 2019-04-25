@@ -34,4 +34,5 @@ void do_bitcount() {
         result += (random_number[i] & (0b1 << 6)) != 0;
         result += (random_number[i] & (0b1 << 7)) != 0;
     }
+    log_info("Counted " << dec << result << " Bits");
 }
