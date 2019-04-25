@@ -94,6 +94,11 @@ void StackBalancer::perform_irq_relocation(uint64_t *saved_stack_base) {
     uint64_t __shadow_stack_begin = __virtual_stack_begin - REAL_STACK_SIZE;
     extern uint64_t __current_stack_base_ptr;
 
+    // log_info("Stack base is at " << hex << __current_stack_base_ptr
+    //                              << ", begin at " << hex
+    //                              << __virtual_stack_begin << " and shadow at "
+    //                              << __shadow_stack_begin);
+
     bool will_wrap =
         __current_stack_base_ptr < (__virtual_stack_begin + RELOCATION_STEP);
 

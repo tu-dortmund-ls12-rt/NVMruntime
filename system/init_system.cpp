@@ -91,10 +91,11 @@ extern "C" void init_system_c() {
     extern void *__INTERNAL_DATA_BEGIN;
     extern void *__NVMSYMBOL__APPLICATION_TEXT_BEGIN;
     extern void *__NVMSYMBOL__APPLICATION_STACK_END;
-    extern void *__NVMSYMBOL__APPLICATION_STACK_BEGIN;
 
     void *application_stack = (void *)&__NVMSYMBOL__APPLICATION_STACK_END;
 #ifdef STACK_BALANCIMG
+    extern void *__NVMSYMBOL__APPLICATION_STACK_BEGIN;
+
     uint64_t stack_size = ((uint64_t)(&__NVMSYMBOL__APPLICATION_STACK_END)) -
                           ((uint64_t)(&__NVMSYMBOL__APPLICATION_STACK_BEGIN));
     application_stack = StackBalancer::instance.setup_shadow_stack(

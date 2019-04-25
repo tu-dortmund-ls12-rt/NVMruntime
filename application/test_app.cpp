@@ -13,7 +13,7 @@ void do_bitcount();
 extern uint64_t __current_stack_base_ptr;
 
 void app_init() {
-    do_bitcount();
+    for (uint32_t i = 0; i < 20; i++) do_bitcount();
     asm volatile("svc #0");
 }
 
@@ -21,7 +21,7 @@ void do_bitcount() {
     uint64_t result = 0;
     uint64_t el_count = 8000;
     for (uint64_t i = 0; i < el_count; i++) {
-        if (i % 30 == 0) {
+        if (i % 25 == 0) {
             StackBalancer::instance.hint_relocation();
         }
         result += (random_number[i] & (0b1 << 0)) != 0;
