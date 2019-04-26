@@ -21,9 +21,7 @@ void do_bitcount() {
     uint64_t result = 0;
     uint64_t el_count = 8000;
     for (uint64_t i = 0; i < el_count; i++) {
-        if (i % 25 == 0) {
-            StackBalancer::instance.hint_relocation();
-        }
+        STACK_OUTER_LOOP
         result += (random_number[i] & (0b1 << 0)) != 0;
         result += (random_number[i] & (0b1 << 1)) != 0;
         result += (random_number[i] & (0b1 << 2)) != 0;

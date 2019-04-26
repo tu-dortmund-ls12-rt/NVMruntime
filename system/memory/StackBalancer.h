@@ -3,6 +3,8 @@
 
 #include <system/stdint.h>
 
+#define STACK_OUTER_LOOP StackBalancer::instance.outer_loop_automatic();
+
 class StackBalancer {
    public:
     StackBalancer();
@@ -17,6 +19,8 @@ class StackBalancer {
 
     void print_statistic();
 
+    void outer_loop_automatic();
+
    private:
     void perform_irq_relocation(uint64_t *saved_stack_base);
 
@@ -25,6 +29,10 @@ class StackBalancer {
 
     bool performed_since_last_irq = false;
     bool performing_balane = false;
+    bool performed_irq_version=false;
+
+    uint64_t outer_loop_balancing_ratio = 1;
+    uint64_t outer_loop_cycle = 0;
 };
 
 #endif

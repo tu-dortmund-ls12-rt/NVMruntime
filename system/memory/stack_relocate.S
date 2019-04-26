@@ -56,6 +56,10 @@ loop_continue:
     sub x29,x29,#RELOCATION_STEP
     sub x12,x12,#RELOCATION_STEP
 
+    /**
+    *   Maybe current unsaved registers (x0-x7 and x19-x29) have to be relocated, too
+    */
+
     //Check if the new base will reach the shadow area
     cmp x12,x10
     bge finish

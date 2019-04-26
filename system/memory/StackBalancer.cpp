@@ -64,6 +64,7 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
     }
     if (!performed_since_last_irq) {
         perform_irq_relocation(saved_stack_base);
+        performed_irq_version = true;
         relocation_coint_irq++;
     } else {
         performed_since_last_irq = false;
@@ -74,6 +75,7 @@ void StackBalancer::hint_relocation() {
     if (!performed_since_last_irq) {
         performing_balane = true;
         performed_since_last_irq = true;
+        performed_irq_version = false;
         relocate_stack();
         relocation_count_syn++;
         performing_balane = false;
@@ -96,7 +98,8 @@ void StackBalancer::perform_irq_relocation(uint64_t *saved_stack_base) {
 
     // log_info("Stack base is at " << hex << __current_stack_base_ptr
     //                              << ", begin at " << hex
-    //                              << __virtual_stack_begin << " and shadow at "
+    //                              << __virtual_stack_begin << " and shadow at
+    //                              "
     //                              << __shadow_stack_begin);
 
     bool will_wrap =
@@ -149,6 +152,30 @@ void StackBalancer::perform_irq_relocation(uint64_t *saved_stack_base) {
     // Write back the stack pointer
     asm volatile("msr sp_el0, %0" ::"r"(app_sp));
     // log_info("Done IRQ reloc");
+}
+
+void StackBalancer::outer_loop_automatic() {
+    /**
+     * Basic idea: the outer_loop_ratio determines the rate of calls of this
+     * function have to be called to trigger a software hint. If the hint is not
+     * successfull (performs no action), the ratio is multiplied by 2. If the
+     * last relocation still was triggered by an irq, the ratio is reduced by 1
+     */
+
+    if (outer_loop_cycle++ >= outer_loop_balancing_ratio) {
+        if (performed_irq_version) {
+            outer_loop_balancing_ratio--;
+        }
+
+        if (performed_since_last_irq) {
+            outer_loop_balancing_ratio *= 2;
+        }
+
+        hint_relocation();
+        outer_loop_cycle = 0;
+
+        // log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
+    }
 }
 
 void StackBalancer::print_statistic() {
