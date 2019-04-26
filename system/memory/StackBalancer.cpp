@@ -162,6 +162,7 @@ void StackBalancer::outer_loop_automatic() {
      * last relocation still was triggered by an irq, the ratio is reduced by 1
      */
 
+#ifdef STACK_BALANCIMG
     if (outer_loop_cycle++ >= outer_loop_balancing_ratio) {
         if (performed_irq_version) {
             outer_loop_balancing_ratio--;
@@ -176,6 +177,7 @@ void StackBalancer::outer_loop_automatic() {
 
         // log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
     }
+#endif
 }
 
 void StackBalancer::print_statistic() {

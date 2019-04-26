@@ -12,12 +12,12 @@
 #define REBALANCE_THRESHOLD 1
 
 // #define DO_REBALANCING
-#define DO_MONITORING
+// #define DO_MONITORING
 
 // #define RESPECT_PROCESS_VARIATION
 // #define PRE_AGED_MEMORY
 
-#define STACK_BALANCIMG
+// #define STACK_BALANCIMG
 //The stack pointer must be aligned on 16 bytes
 // #define RELOCATION_STEP 0x20
 #define RELOCATION_STEP 0x40
