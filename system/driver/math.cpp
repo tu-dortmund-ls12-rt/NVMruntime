@@ -216,3 +216,31 @@ v4sf cos_ps(v4sf x) {
     sincos_ps(x, &ysin, &ycos);
     return ycos;
 }
+
+// Float versions
+float Math::exp_s(float num) {
+    float number = num;
+    float32x4_t inp = vdupq_n_f32(number);
+    inp = exp_ps(inp);
+    return vgetq_lane_f32(inp, 0);
+}
+
+float Math::sqrt_s(float num) {
+    float32x2_t number = vdup_n_f32(num);
+    float32x2_t result = vsqrt_f32(number);
+    return vget_lane_f32(result, 0);
+}
+
+float Math::sin_s(float num) {
+    float number = num;
+    float32x4_t inp = vdupq_n_f32(number);
+    inp = sin_ps(inp);
+    return vgetq_lane_f32(inp, 0);
+}
+float Math::cos_s(float num) {
+    float number = num;
+    float32x4_t inp = vdupq_n_f32(number);
+    inp = cos_ps(inp);
+    return vgetq_lane_f32(inp, 0);
+}
+float Math::pi_s() { return 3.14159265359; }

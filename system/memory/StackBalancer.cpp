@@ -66,9 +66,14 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
         perform_irq_relocation(saved_stack_base);
         performed_irq_version = true;
         relocation_coint_irq++;
+
+        if (current_recursion_depth > recursion_depth_trigger) {
+            recursion_depth_trigger++;
+        }
     } else {
         performed_since_last_irq = false;
     }
+    // log_info("[RACR]: " << dec << recursion_depth_trigger);
 }
 
 void StackBalancer::hint_relocation() {
@@ -180,8 +185,48 @@ void StackBalancer::outer_loop_automatic() {
 #endif
 }
 
+void StackBalancer::recursive_automatic_call_begin() {
+// First increase recursion depth
+#ifdef STACK_BALANCIMG
+    current_recursion_depth++;
+    // log_info("Now at level" << dec << current_recursion_depth);
+
+    // if (current_recursion_depth <= recursion_depth_trigger) {
+    //     log_info("Call level " << current_recursion_depth << "reached");
+    // }
+
+    // if (performed_irq_version) {
+    //     if (current_recursion_depth > recursion_depth_trigger) {
+    //         recursion_depth_trigger++;
+    //     }
+    // }
+
+    if (current_recursion_depth == recursion_depth_trigger) {
+        if (performed_since_last_irq) {
+            recursion_depth_trigger--;
+        }
+
+        hint_relocation();
+    }
+#endif
+}
+void StackBalancer::recursive_automatic_call_end() {
+// Reduce recursion depth
+#ifdef STACK_BALANCIMG
+    current_recursion_depth--;
+#endif
+}
+
 void StackBalancer::print_statistic() {
     log("[Stack Balancer] Syn RLCs: " << dec << relocation_count_syn
                                       << " / IRQ RLCs: " << dec
                                       << relocation_coint_irq);
+}
+
+RecursiveGuard::RecursiveGuard() {
+    StackBalancer::instance.recursive_automatic_call_begin();
+}
+
+RecursiveGuard::~RecursiveGuard() {
+    StackBalancer::instance.recursive_automatic_call_end();
 }
