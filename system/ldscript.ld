@@ -153,7 +153,7 @@ SECTIONS
     __NVMSYMBOL__APPLICATION_STACK_BEGIN = .;
     .stack : {
         . = ALIGN(0x8);
-        . += 0x20000; /* 1MB */
+        . += 0x8000; /* 1MB */
         __stack_top = .;
     }
     __NVMSYMBOL__APPLICATION_STACK_END = .;

@@ -68,12 +68,16 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
         relocation_coint_irq++;
 
         if (current_recursion_depth > recursion_depth_trigger) {
+            log_info("On level " << dec << current_recursion_depth);
             recursion_depth_trigger++;
         }
     } else {
         performed_since_last_irq = false;
     }
+    // log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
     // log_info("[RACR]: " << dec << recursion_depth_trigger);
+    // extern uint64_t __current_stack_base_ptr;
+    // log_info("[BBPTR]: " << hex << __current_stack_base_ptr);
 }
 
 void StackBalancer::hint_relocation() {
@@ -202,7 +206,7 @@ void StackBalancer::recursive_automatic_call_begin() {
     // }
 
     if (current_recursion_depth == recursion_depth_trigger) {
-        if (performed_since_last_irq) {
+        if (performed_since_last_irq && recursion_depth_trigger > 1) {
             recursion_depth_trigger--;
         }
 
