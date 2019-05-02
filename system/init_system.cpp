@@ -137,7 +137,7 @@ extern "C" void init_system_c() {
          app_page < (uintptr_t)(TARGET_STACK_VADDRESS + (STACK_SIZE / 2));
          app_page += 0x1000) {
 #ifdef DO_MONITORING
-        // WriteMonitor::instance.add_page_to_observe((void *)app_page);
+        WriteMonitor::instance.add_stack_page_to_observe((void *)app_page);
 #endif
         MMU::instance.set_stack_access_permission(
             (void *)app_page, MMU::ACCESS_PERMISSION::RW_FROM_EL1_EL0);

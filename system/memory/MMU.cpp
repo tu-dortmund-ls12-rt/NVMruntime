@@ -3,7 +3,6 @@
 
 MMU MMU::instance;
 
-
 /**
  * Level 0 Table controls 512GB memory
  * =>1 Entry -- 512GB
@@ -27,8 +26,7 @@ uint64_t level1_table[50] __attribute__((aligned(4096)));
  * =>512 entries (1GB for stack)
  */
 uint64_t level2_table[4096] __attribute__((aligned(4096)));
-uint64_t level2_table_stack[512]
-    __attribute__((aligned(4096)));
+uint64_t level2_table_stack[512] __attribute__((aligned(4096)));
 
 /**
  * Level 3 Table controls 4kb memory each
@@ -81,7 +79,7 @@ void MMU::setup_pagetables() {
         // level2_table, redirecting to level2 table
         level1_table[i] = (0b11) | (((uint64_t)level2_table) + i * 512 * 8);
     }
-    //The stack l1 table is 1 gb at 39GB
+    // The stack l1 table is 1 gb at 39GB
     level1_table[40] = (0b11) | (((uint64_t)level2_table_stack));
 
     log("Setting UP Level 2 Table");
@@ -102,7 +100,7 @@ void MMU::setup_pagetables() {
     }
     OutputStream::instance << endl;
     // Level 2 Table Stack: Completely redirecting to Level 3 Stack
-    for (uint64_t i = 0; i <= (STACK_SIZE/2097152); i++) {
+    for (uint64_t i = 0; i <= (STACK_SIZE / 2097152); i++) {
         level2_table_stack[i] =
             (0b11) | (((uint64_t)level3_table_stack) + i * 512 * 8);
     }
@@ -118,8 +116,8 @@ void MMU::setup_pagetables() {
     }
     OutputStream::instance << endl;
     for (uint64_t i = 0; i <= (STACK_SIZE / 4096); i++) {
-        level3_table_stack[i] =
-            (0b11) | (0b111001001 << 2) | (TARGET_STACK_VADDRESS + (i * 0x1000));
+        level3_table_stack[i] = (0b11) | (0b111001001 << 2) |
+                                (TARGET_STACK_VADDRESS + (i * 0x1000));
     }
 
     // Finally set the ttbr0 register to level 0 table
@@ -286,12 +284,14 @@ void MMU::set_page_mapping(void *vm_page, void *phys_page) {
             ;
     }
 
+    log_info("Mapping" << hex << vm_page << " -> " << hex << phys_page);
+
     uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
     (*l3_desc) &= ~0xFFFFFFFFF000;                         // Clear mapping
     (*l3_desc) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping
 }
 
-void MMU::set_stack_page_mapping(void *vm_page, void *phys_page){
+void MMU::set_stack_page_mapping(void *vm_page, void *phys_page) {
     // Check if it is a mapped stack page
     uintptr_t page = (uintptr_t)vm_page;
     if (page < TARGET_STACK_VADDRESS) {
@@ -299,7 +299,7 @@ void MMU::set_stack_page_mapping(void *vm_page, void *phys_page){
         while (1)
             ;
     }
-    if (page >= TARGET_STACK_VADDRESS + (STACK_SIZE/2)) {
+    if (page >= TARGET_STACK_VADDRESS + (STACK_SIZE / 2)) {
         log_error(
             "System does not manage this page (maybe extend the managed stack "
             "memory)");
@@ -307,19 +307,23 @@ void MMU::set_stack_page_mapping(void *vm_page, void *phys_page){
             ;
     }
 
-    // log_info("Mapping " << hex << vm_page << " -> " << hex << phys_page);
+    log_info("Mapping Stack" << hex << vm_page << " -> " << hex << phys_page);
 
-    uint64_t *l3_desc = &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
+    uint64_t *l3_desc =
+        &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
     // log_info("Prev mapped to " << ((void *)((*l3_desc) & 0xFFFFFFFFF000)));
     (*l3_desc) &= ~0xFFFFFFFFF000;                         // Clear mapping
-    (*l3_desc) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping    
-    uint64_t *l3_desc_shadow = &level3_table_stack[(page - TARGET_STACK_VADDRESS + (STACK_SIZE /2)) / 0x1000];
-    // log_info("Prev mapped to " << ((void *)((*l3_desc_shadow) & 0xFFFFFFFFF000)));
-    (*l3_desc_shadow) &= ~0xFFFFFFFFF000;                         // Clear mapping
-    (*l3_desc_shadow) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping    
+    (*l3_desc) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping
+    uint64_t *l3_desc_shadow =
+        &level3_table_stack[(page - TARGET_STACK_VADDRESS + (STACK_SIZE / 2)) /
+                            0x1000];
+    // log_info("Prev mapped to " << ((void *)((*l3_desc_shadow) &
+    // 0xFFFFFFFFF000)));
+    (*l3_desc_shadow) &= ~0xFFFFFFFFF000;  // Clear mapping
+    (*l3_desc_shadow) |= ((uint64_t)phys_page) & 0xFFFFFFFFF000;  // Set mapping
 }
 
-void MMU::set_stack_access_permission(void *vm_page, uint64_t ap){
+void MMU::set_stack_access_permission(void *vm_page, uint64_t ap) {
     // Check if it is a mapped stack page
     uintptr_t page = (uintptr_t)vm_page;
     if (page < TARGET_STACK_VADDRESS) {
@@ -327,7 +331,7 @@ void MMU::set_stack_access_permission(void *vm_page, uint64_t ap){
         while (1)
             ;
     }
-    if (page >= TARGET_STACK_VADDRESS + (STACK_SIZE/2)) {
+    if (page >= TARGET_STACK_VADDRESS + (STACK_SIZE / 2)) {
         log_error(
             "System does not manage this page (maybe extend the managed stack "
             "memory)");
@@ -335,10 +339,13 @@ void MMU::set_stack_access_permission(void *vm_page, uint64_t ap){
             ;
     }
 
-    uint64_t *l3_desc = &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
+    uint64_t *l3_desc =
+        &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
     *l3_desc &= ~(0b11 << 6);
     *l3_desc |= (ap & 0b11) << 6;
-    uint64_t *l3_desc_shadow = &level3_table_stack[(page - TARGET_STACK_VADDRESS + (STACK_SIZE /2)) / 0x1000];
+    uint64_t *l3_desc_shadow =
+        &level3_table_stack[(page - TARGET_STACK_VADDRESS + (STACK_SIZE / 2)) /
+                            0x1000];
     *l3_desc_shadow &= ~(0b11 << 6);
     *l3_desc_shadow |= (ap & 0b11) << 6;
 }
@@ -359,6 +366,6 @@ void *MMU::get_stack_mapping(void *vm_page) {
             ;
     }
 
-    uint64_t *l3_desc = &level3_table_stack[(page - 0x80000000UL) / 0x1000];
+    uint64_t *l3_desc = &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];
     return (void *)((*l3_desc) & 0xFFFFFFFFF000);
 }

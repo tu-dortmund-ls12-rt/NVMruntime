@@ -15,12 +15,12 @@ uint64_t bss_filler[2048];
 uint64_t sort_buffer[8000];
 
 void app_init() {
-    unsigned long sort_size = 5000;
+    unsigned long sort_size = 50;
     log("Starting to sort " << dec << sort_size << " numbers");
 
     // quick_sort_f(random_number, random_number + sort_size);
 
-    for (uint64_t i = 0; i < 20; i++) {
+    for (uint64_t i = 0; i < 1; i++) {
         for (uint64_t x = 0; x < sort_size; x++) {
             STACK_OUTER_LOOP
             sort_buffer[x] = random_number[x];

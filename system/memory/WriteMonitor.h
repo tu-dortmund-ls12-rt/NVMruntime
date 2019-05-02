@@ -17,16 +17,20 @@ class WriteMonitor {
     void terminate();
     void plot_results();
     void add_page_to_observe(void* vm_page);
+    void add_stack_page_to_observe(void* vm_page);
     void set_notify_threshold(uint64_t notify_threshold);
 
     bool handle_data_permission_interrupt();
 
-    void handle_pmc_0_interrupt(uint64_t *saved_stack_base);
+    void handle_pmc_0_interrupt(uint64_t* saved_stack_base);
 
    private:
     uint64_t write_count[MONITOR_CAPACITY];
+    uint64_t stack_write_count[REAL_STACK_SIZE / 0x1000];
     void* vm_pages_to_observe[MONITOR_CAPACITY];
+    void* stack_vm_pages_to_observe[MONITOR_CAPACITY];
     uint64_t observerd_vm_pages_count = 0;
+    uint64_t oberved_stack_pages_count = 0;
 
     uint64_t notify_threshold = UINT64_MAX;
 

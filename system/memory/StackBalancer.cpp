@@ -68,7 +68,7 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
         relocation_coint_irq++;
 
         if (current_recursion_depth > recursion_depth_trigger) {
-            log_info("On level " << dec << current_recursion_depth);
+            // log_info("On level " << dec << current_recursion_depth);
             recursion_depth_trigger++;
         }
     } else {

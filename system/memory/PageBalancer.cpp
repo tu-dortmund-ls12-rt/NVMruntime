@@ -19,6 +19,15 @@ PageBalancer::PageBalancer() {
 #else
         managed_pages[i] = {managed_pages_begin, managed_pages_begin, 0};
 #endif
+#ifdef STACK_BALANCIMG
+        if (managed_pages_begin >=
+            (uintptr_t)(&__NVMSYMBOL__APPLICATION_STACK_BEGIN)) {
+            managed_pages[i].value.mapped_vm_page =
+                TARGET_STACK_VADDRESS +
+                (managed_pages_begin -
+                 (uintptr_t)(&__NVMSYMBOL__APPLICATION_STACK_BEGIN));
+        }
+#endif
         aes_tree.insert(managed_pages + i);
         managed_pages_begin += 0x1000;
         if (managed_pages_begin == managed_pages_end) {
@@ -64,18 +73,48 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
     rebalance_count++;
 
     // Determine the current physical address
-    uintptr_t physical_address = (uintptr_t)MMU::instance.get_mapping(vm_page);
+    uintptr_t physical_address;
+#ifdef STACK_BALANCIMG
+    if ((uintptr_t)vm_page >= TARGET_STACK_VADDRESS) {
+        physical_address = (uintptr_t)MMU::instance.get_stack_mapping(vm_page);
+    } else
+#endif
+    {
+        physical_address = (uintptr_t)MMU::instance.get_mapping(vm_page);
+    }
     unsigned int array_offset =
         (physical_address - managed_pages_begin) / 0x1000;
+
+    log_info("[RMAP]: " << vm_page << "[" << hex << physical_address << "] -> "
+                        << hex << target.phys_address << "{" << hex
+                        << target.mapped_vm_page << "}");
+
     // Swap both pages
     uintptr_t former_vm = target.mapped_vm_page;
     managed_pages[array_offset].value.mapped_vm_page = former_vm;
     target.mapped_vm_page = (uintptr_t)vm_page;
 
-    // Exchange pagetables
-    MMU::instance.set_page_mapping(vm_page, (void *)target.phys_address);
+// Exchange pagetables
+#ifdef STACK_BALANCIMG
+    if ((uintptr_t)vm_page >= TARGET_STACK_VADDRESS) {
+        MMU::instance.set_stack_page_mapping(vm_page,
+                                             (void *)target.phys_address);
+    } else
+#endif
+    {
+        MMU::instance.set_page_mapping(vm_page, (void *)target.phys_address);
+    }
     MMU::instance.invalidate_tlb_entry(vm_page);
-    MMU::instance.set_page_mapping((void *)former_vm, (void *)physical_address);
+#ifdef STACK_BALANCIMG
+    if ((uintptr_t)former_vm >= TARGET_STACK_VADDRESS) {
+        MMU::instance.set_stack_page_mapping((void *)former_vm,
+                                             (void *)physical_address);
+    } else
+#endif
+    {
+        MMU::instance.set_page_mapping((void *)former_vm,
+                                       (void *)physical_address);
+    }
     MMU::instance.invalidate_tlb_entry((void *)former_vm);
 
     // Last copy the actual data
@@ -101,7 +140,8 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
     target.access_count += age_factors[target_array_offset / domain_size];
     // log("Rebalancing to " << hex << target.phys_address
     //                       << ", assuming process factor of " << dec
-    //                       << age_factors[target_array_offset / domain_size] << " to " << target.access_count);
+    //                       << age_factors[target_array_offset / domain_size]
+    //                       << " to " << target.access_count);
 #else
     target.access_count++;
 #endif
