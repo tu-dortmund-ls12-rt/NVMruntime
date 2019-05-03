@@ -48,9 +48,9 @@ void pfor_compress(uint64_t *input_numbers, uint64_t input_size,
          << (COMPRESSION_SIZE * last_exception_entry_offset));
 }
 
-void pfor_uncompress(uint64_t *input_array, uint64_t input_size,
-                     uint64_t *exception_list, uint64_t first_execption,
-                     uint64_t *uncompressed) {
+uint64_t pfor_uncompress(uint64_t *input_array, uint64_t input_size,
+                         uint64_t *exception_list, uint64_t first_execption,
+                         uint64_t *uncompressed, uint64_t *exception_count_p) {
     uint64_t current_offset = 0;
     uint64_t exception_countdown = first_execption;
     uint64_t exception_count = 0;
@@ -71,4 +71,10 @@ void pfor_uncompress(uint64_t *input_array, uint64_t input_size,
             uncompressed[i] = decompressed;
         }
     }
+
+    if (exception_count_p != 0) {
+        *exception_count_p = exception_count;
+    }
+
+    return exception_countdown;
 }

@@ -2,7 +2,93 @@
 #include "data.h"
 #include "pfor.h"
 
+void simple_test();
+void compress_array();
+void decompress_and_check();
+void decompress_incremental();
+
 void app_init() {
+    // simple_test();
+    // compress_array();
+    // decompress_and_check();
+    decompress_incremental();
+
+    asm volatile("svc #0");
+}
+
+uint64_t full_compress_compressed[2000];
+uint64_t full_compress_exception_list[8000];
+void compress_array() {
+    log_info("Beginning PFOR Compression");
+    log_info("Compressing 8000 Numbers:");
+
+    uint64_t first_exception;
+    uint64_t exception_count;
+
+    pfor_compress(random_number, 8000, full_compress_compressed,
+                  full_compress_exception_list, &exception_count,
+                  &first_exception);
+
+    log_info("Compressed entire array: " << dec << exception_count
+                                         << " Exceptions, first at " << dec
+                                         << first_exception);
+
+    OutputStream::instance << "\n";
+    for (uint64_t i = 0; i < 2000; i++) {
+        OutputStream::instance << dec << full_compress_compressed[i] << ",\n";
+    }
+    OutputStream::instance << "\n\n";
+    for (uint64_t i = 0; i < exception_count; i++) {
+        OutputStream::instance << dec << full_compress_exception_list[i]
+                               << ",\n";
+    }
+}
+
+uint64_t full_decompress_uncompressed[8000];
+
+void decompress_and_check() {
+    log_info("Beginning PFOR Compression");
+    log_info("Decompressing 8000 Numbers:");
+
+    pfor_uncompress(pfor_d_compressed, 8000, pfor_d_exception_list,
+                    pfor_d_first_exception, full_decompress_uncompressed);
+
+    for (uint64_t i = 0; i < 8000; i++) {
+        if (full_decompress_uncompressed[i] != random_number[i]) {
+            log_info("Found mismatch at " << dec << i << ": " << dec
+                                          << full_decompress_uncompressed[i]
+                                          << " != " << dec << random_number[i]);
+        }
+    }
+}
+
+void decompress_incremental() {
+    log_info("Beginning PFOR Compression");
+    log_info("Decompressing 8000 Numbers incremental (40 each):");
+    uint64_t next_exception = pfor_d_first_exception;
+    uint64_t exception_offset = 0;
+    for (uint64_t i = 0; i < 200; i++) {
+        uint64_t uncompressed[40];
+        uint64_t number_exceptions = 0;
+        next_exception =
+            pfor_uncompress(pfor_d_compressed + (i * 10), 40,
+                            pfor_d_exception_list + exception_offset,
+                            next_exception, uncompressed, &number_exceptions);
+        exception_offset += number_exceptions;
+
+        for (uint64_t x = 0; x < 40; x++) {
+            if (uncompressed[x] != random_number[(i * 40) + x]) {
+                log_info("Found mismatch at " << dec << ((i * 40) + x) << ": "
+                                              << dec << uncompressed[x]
+                                              << " != " << dec
+                                              << random_number[(i * 40) + x]);
+            }
+        }
+    }
+    log_info("No errors found");
+}
+
+void simple_test() {
     log_info("Beginning PFOR Compression");
     log_info("Compressing 16 Numbers:");
     for (uint64_t i = 0; i < 16; i++) {
@@ -42,6 +128,4 @@ void app_init() {
     for (uint64_t i = 0; i < 16; i++) {
         log_info("[" << dec << i << "] " << dec << decompressed[i]);
     }
-
-    asm volatile("svc #0");
 }
