@@ -34,5 +34,14 @@ void app_init() {
     }
     log_info("First exception at " << dec << first_exception);
 
+    log_info("\n=====Decompressing=====\n");
+    uint64_t decompressed[10];
+    pfor_uncompress(compressed, 16, exception_list, first_exception,
+                    decompressed);
+
+    for (uint64_t i = 0; i < 16; i++) {
+        log_info("[" << dec << i << "] " << dec << decompressed[i]);
+    }
+
     asm volatile("svc #0");
 }

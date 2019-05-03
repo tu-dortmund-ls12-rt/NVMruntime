@@ -49,5 +49,26 @@ void pfor_compress(uint64_t *input_numbers, uint64_t input_size,
 }
 
 void pfor_uncompress(uint64_t *input_array, uint64_t input_size,
-                     uint64_t *exception_list, uint64_t irst_execption,
-                     uint64_t *uncompressed) {}
+                     uint64_t *exception_list, uint64_t first_execption,
+                     uint64_t *uncompressed) {
+    uint64_t current_offset = 0;
+    uint64_t exception_countdown = first_execption;
+    uint64_t exception_count = 0;
+
+    for (uint64_t i = 0; i < input_size; i++) {
+        // Extract the value
+        uint64_t decompressed = input_array[i / (32 / COMPRESSION_SIZE)];
+        decompressed = decompressed >> (current_offset * COMPRESSION_SIZE);
+        decompressed &= MAX_STORE_VALUE;
+
+        current_offset = (current_offset + 1) % (32 / COMPRESSION_SIZE);
+
+        if (exception_countdown == 0) {
+            uncompressed[i] = exception_list[exception_count++];
+            exception_countdown = decompressed;
+        } else {
+            exception_countdown--;
+            uncompressed[i] = decompressed;
+        }
+    }
+}
