@@ -85,9 +85,9 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
     unsigned int array_offset =
         (physical_address - managed_pages_begin) / 0x1000;
 
-    log_info("[RMAP]: " << vm_page << "[" << hex << physical_address << "] -> "
-                        << hex << target.phys_address << "{" << hex
-                        << target.mapped_vm_page << "}");
+    // log_info("[RMAP]: " << vm_page << "[" << hex << physical_address << "] -> "
+    //                     << hex << target.phys_address << "{" << hex
+    //                     << target.mapped_vm_page << "}");
 
     // Swap both pages
     uintptr_t former_vm = target.mapped_vm_page;
@@ -150,7 +150,7 @@ void PageBalancer::trigger_rebalance(void *vm_page) {
 }
 
 void PageBalancer::enable_balancing() {
-    log("Balancing " << aes_tree.get_element_count() << " pages");
+    log("Balancing " << dec << aes_tree.get_element_count() << " pages");
     uintptr_t managed_pages_begin =
         (uintptr_t)(&__NVMSYMBOL__APPLICATION_INIT_FINI_BEGIN);
     uintptr_t managed_pages_end =
@@ -161,6 +161,13 @@ void PageBalancer::enable_balancing() {
         // log("Adding page " << (void *)managed_pages_begin << " to observe");
         WriteMonitor::instance.add_page_to_observe((void *)managed_pages_begin);
     }
+
+    for (uintptr_t app_page = (uintptr_t)TARGET_STACK_VADDRESS;
+         app_page < (uintptr_t)(TARGET_STACK_VADDRESS + (STACK_SIZE / 2));
+         app_page += 0x1000) {
+        WriteMonitor::instance.add_stack_page_to_observe((void *)app_page);
+    }
+
     WriteMonitor::instance.set_notify_threshold(REBALANCE_THRESHOLD);
     WriteMonitor::instance.initialize();
 }

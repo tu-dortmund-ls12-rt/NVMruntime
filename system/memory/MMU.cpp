@@ -284,7 +284,7 @@ void MMU::set_page_mapping(void *vm_page, void *phys_page) {
             ;
     }
 
-    log_info("Mapping" << hex << vm_page << " -> " << hex << phys_page);
+    // log_info("Mapping" << hex << vm_page << " -> " << hex << phys_page);
 
     uint64_t *l3_desc = &level3_table[(page - 0x80000000UL) / 0x1000];
     (*l3_desc) &= ~0xFFFFFFFFF000;                         // Clear mapping
@@ -307,7 +307,7 @@ void MMU::set_stack_page_mapping(void *vm_page, void *phys_page) {
             ;
     }
 
-    log_info("Mapping Stack" << hex << vm_page << " -> " << hex << phys_page);
+    // log_info("Mapping Stack" << hex << vm_page << " -> " << hex << phys_page);
 
     uint64_t *l3_desc =
         &level3_table_stack[(page - TARGET_STACK_VADDRESS) / 0x1000];

@@ -145,6 +145,7 @@ SECTIONS
     __NVMSYMBOL__APPLICATION_BSS_BEGIN = .;
     .bss : {
         *(.bss)
+        . += 1024;
     }
     __NVMSYMBOL__APPLICATION_BSS_END = .;
     
