@@ -1,6 +1,8 @@
 #include <system/service/logger.h>
 #include "data.h"
 #include "pfor.h"
+#include <system/memory/StackBalancer.h>
+#include <system/memory/stack_relocate.h>
 
 #define BENCHMARK
 
@@ -38,6 +40,8 @@ void benchmark() {
         uint64_t next_exception = pfor_d_first_exception;
         uint64_t exception_offset = 0;
         for (uint64_t i = 0; i < runs; i++) {
+            STACK_OUTER_LOOP
+            // relocate_stack();
             uint64_t uncompressed[step_size];
             uint64_t number_exceptions = 0;
             next_exception = pfor_uncompress(

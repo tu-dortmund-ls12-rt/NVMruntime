@@ -34,6 +34,9 @@ extern "C" void handle_irq_lowlevel_sync() {
     uint64_t far = 0;
     asm volatile("mrs %0, far_el1" : "=r"(far));
     log("FAR " << hex << far);
+    uint64_t elr = 0;
+    asm volatile("mrs %0, elr_el1" : "=r"(elr));
+    log("ELR " << hex << elr);
     while (1)
         ;
 }

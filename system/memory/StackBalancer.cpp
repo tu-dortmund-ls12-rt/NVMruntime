@@ -122,7 +122,7 @@ void StackBalancer::perform_irq_relocation(uint64_t *saved_stack_base) {
          target < __current_stack_base_ptr; target += 8) {
         uint64_t lword = *((uint64_t *)(target));
         // Check if the word has to be relocated
-        if (lword < __current_stack_base_ptr && lword >= __shadow_stack_begin) {
+        if (lword < __current_stack_base_ptr && lword > __shadow_stack_begin) {
             lword -= RELOCATION_STEP;
         }
         // Check if the word is in the shadow
@@ -137,7 +137,7 @@ void StackBalancer::perform_irq_relocation(uint64_t *saved_stack_base) {
     for (uint64_t i = 0; i < 31; i++) {
         uint64_t lword = saved_stack_base[i];
         // Check if the word has to be relocated
-        if (lword < __current_stack_base_ptr && lword >= __shadow_stack_begin) {
+        if (lword < __current_stack_base_ptr && lword > __shadow_stack_begin) {
             lword -= RELOCATION_STEP;
         }
         // Check if the word is in the shadow
