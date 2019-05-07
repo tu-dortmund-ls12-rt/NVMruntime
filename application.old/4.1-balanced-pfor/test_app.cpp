@@ -1,21 +1,71 @@
 #include <system/service/logger.h>
 #include "data.h"
 #include "pfor.h"
+#include <system/memory/StackBalancer.h>
+#include <system/memory/stack_relocate.h>
 
+#define BENCHMARK
+
+#ifndef BENCHMARK
 void simple_test();
 void compress_array();
 void decompress_and_check();
 void decompress_incremental();
+#endif
+void benchmark();
 
 void app_init() {
     // simple_test();
     // compress_array();
     // decompress_and_check();
-    decompress_incremental();
+    // decompress_incremental();
+    benchmark();
 
     asm volatile("svc #0");
 }
 
+void benchmark() {
+    /**
+     * This benchmark decompresses pfor data in small packets and aggregatves
+     * over them
+     */
+    uint64_t step_size = 40;
+    uint64_t runs = 8000 / step_size;
+    uint64_t compressed_size = step_size / 4;
+    uint64_t repetitions = 10;
+
+    uint32_t __attribute__((aligned(8))) overall_sum = 0;
+
+    for (uint64_t rep = 0; rep < repetitions; rep++) {
+        uint64_t next_exception = pfor_d_first_exception;
+        uint64_t exception_offset = 0;
+        for (uint64_t i = 0; i < runs; i++) {
+            STACK_OUTER_LOOP
+            // relocate_stack();
+            uint64_t uncompressed[step_size];
+            uint64_t number_exceptions = 0;
+            next_exception = pfor_uncompress(
+                pfor_d_compressed + (i * compressed_size), step_size,
+                pfor_d_exception_list + exception_offset, next_exception,
+                uncompressed, &number_exceptions);
+            exception_offset += number_exceptions;
+
+            // Loop over uncompressed data and aggregate
+            for (uint64_t x = 0; x < step_size; x++) {
+                if (uncompressed[x] != random_number[(step_size * i) + x]) {
+                    log_error("Found mismatch");
+                    while (1)
+                        ;
+                }
+                overall_sum += uncompressed[x];
+            }
+        }
+    }
+
+    log_info("Uncompressed sum is " << dec << overall_sum);
+}
+
+#ifndef BENCHMARK
 uint64_t full_compress_compressed[2000];
 uint64_t full_compress_exception_list[8000];
 void compress_array() {
@@ -129,3 +179,4 @@ void simple_test() {
         log_info("[" << dec << i << "] " << dec << decompressed[i]);
     }
 }
+#endif
