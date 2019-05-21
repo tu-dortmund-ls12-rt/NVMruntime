@@ -11,6 +11,9 @@ extern uint64_t __virtual_stack_begin;
 extern uint64_t __current_stack_base_ptr;
 
 template <typename T>
+class Intermediate_Pointer_Setter;
+
+template <typename T>
 class RelocationSafePointer {
    private:
     /**
@@ -49,35 +52,33 @@ class RelocationSafePointer {
         }
     }
 
-    T operator*() {
-        // Check if the pointer needs relocation
-        if (local_ptr & (0b1UL << 63)) {
-            syscall_delay_relocation();
-
-            // Restore the correct pointer
-            uintptr_t correct = local_ptr & ~(0b1UL << 63);
-            // Determine the current stack relocation
-            uint64_t current_relocation =
-                (__virtual_stack_end - __current_stack_base_ptr);
-
-            if (current_relocation >= ptr_snapshot_relocation) {
-                correct -= (current_relocation - ptr_snapshot_relocation);
-            } else {
-                // In this case, the relocation wrapped around
-                correct += (ptr_snapshot_relocation - current_relocation);
-            }
-
-            T copy = *((T *)(correct));
-
-            syscall_continue_relocatuion();
-
-            return copy;
-        } else {
-            return *((T *)(local_ptr));
-        }
+    Intermediate_Pointer_Setter<T> operator*() {
+        return Intermediate_Pointer_Setter<T>(*this, 0);
     }
 
-    T operator[](uint64_t index) {
+    Intermediate_Pointer_Setter<T> operator[](uint64_t index) {
+        return Intermediate_Pointer_Setter<T>(*this, index);
+    }
+
+    T* operator&(){
+        return (T *)local_ptr;
+    }
+
+    RelocationSafePointer<T> operator+(uint64_t offset){
+        RelocationSafePointer<T> ret;
+        ret.local_ptr=local_ptr+(sizeof(T)*offset);
+        ret.ptr_snapshot_relocation=ptr_snapshot_relocation;
+        return ret;
+    }
+
+    RelocationSafePointer<T> operator-(uint64_t offset){
+        RelocationSafePointer<T> ret;
+        ret.local_ptr=local_ptr-(sizeof(T)*offset);
+        ret.ptr_snapshot_relocation=ptr_snapshot_relocation;
+        return ret;
+    }
+
+    T get_value(uint64_t index) {
         // Check if the pointer needs relocation
         if (local_ptr & (0b1UL << 63)) {
             syscall_delay_relocation();
@@ -104,6 +105,50 @@ class RelocationSafePointer {
             return ((T *)(local_ptr))[index];
         }
     }
+
+    void set_value(T value, uint64_t index) {
+        // Check if the pointer needs relocation
+        if (local_ptr & (0b1UL << 63)) {
+            syscall_delay_relocation();
+
+            // Restore the correct pointer
+            uintptr_t correct = local_ptr & ~(0b1UL << 63);
+            // Determine the current stack relocation
+            uint64_t current_relocation =
+                (__virtual_stack_end - __current_stack_base_ptr);
+
+            if (current_relocation >= ptr_snapshot_relocation) {
+                correct -= (current_relocation - ptr_snapshot_relocation);
+            } else {
+                // In this case, the relocation wrapped around
+                correct += (ptr_snapshot_relocation - current_relocation);
+            }
+
+            ((T *)(correct))[index] = value;
+
+            syscall_continue_relocatuion();
+        } else {
+            ((T *)(local_ptr))[index] = value;
+        }
+    }
+};
+
+template <typename T>
+class Intermediate_Pointer_Setter {
+   private:
+    RelocationSafePointer<T> ptr;
+    uint64_t index;
+
+   public:
+    Intermediate_Pointer_Setter(RelocationSafePointer<T> ptr, uint64_t index) {
+        this->ptr = ptr;
+        this->index = index;
+    }
+    T operator=(T value) {
+        ptr.set_value(value, index);
+        return value;
+    }
+    operator T() { return ptr.get_value(index); }
 };
 
 #endif

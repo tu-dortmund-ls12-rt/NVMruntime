@@ -9,11 +9,10 @@ void *operator new(uint64_t size, void *placement);
 
 #ifdef STACK_BALANCIMG
 
-#define stack_allocate(type, size, name)                   \
-    syscall_delay_relocation();                            \
-    char __auto_alloc_##name[sizeof(type) * size];         \
-    RelocationSafePointer<type> name(__auto_alloc_##name); \
-    syscall_continue_relocatuion();
+#define stack_allocate(type, size, name)           \
+    syscall_delay_relocation();                    \
+    char __auto_alloc_##name[sizeof(type) * size]; \
+    RelocationSafePointer<type> name((type *)__auto_alloc_##name);
 
 #endif
 

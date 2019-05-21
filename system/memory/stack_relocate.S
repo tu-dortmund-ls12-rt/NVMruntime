@@ -48,7 +48,9 @@ relocate_stack: //x9,x11
     //Start the copy of the stack
 begin_loop:
     ldr x14,[x13]
+#ifdef IN_MEMORY_POINTER_RELOCATION
     b relocate_ptr
+#endif
 loop_continue:
     str x14,[x13,#-RELOCATION_STEP]
     add x13,x13,#0x8
@@ -58,10 +60,13 @@ loop_continue:
     /**
     *   Maybe current unsaved registers (x0-x7 and x19-x29) have to be relocated, too
     */
+#ifdef IN_MEMORY_POINTER_RELOCATION
     b relocate_registers
 continue_registers:
+#else
+    sub x29,x29,#RELOCATION_STEP
+#endif
 
-    //sub x29,x29,#RELOCATION_STEP
     sub x12,x12,#RELOCATION_STEP
 
 
@@ -95,6 +100,8 @@ relocate_ptr:
     bge loop_continue
     add x14,x14,#REAL_STACK_SIZE
     b loop_continue
+
+#ifdef IN_MEMORY_POINTER_RELOCATION
 
 .macro relocate_register_code register, continue
 
@@ -153,3 +160,5 @@ c_x28:
 c_x29:
     relocate_register_code x29,continue_registers
 b continue_registers
+
+#endif
