@@ -22,6 +22,10 @@ void *StackBalancer::setup_shadow_stack(void *phys_head, uint64_t size) {
 }
 
 void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
+    if (paused_relocation) {
+        irq_while_paused = true;
+        return;
+    }
     // log_info("Saved stack frame is at " << saved_stack_base);
 
     // log_info("X0\t" << hex << saved_stack_base[28]);
@@ -74,8 +78,8 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
     } else {
         performed_since_last_irq = false;
     }
-    log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
-    log_info("[RACR]: " << dec << recursion_depth_trigger);
+    // log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
+    // log_info("[RACR]: " << dec << recursion_depth_trigger);
     // extern uint64_t __current_stack_base_ptr;
     // log_info("[BBPTR]: " << hex << __current_stack_base_ptr);
 }

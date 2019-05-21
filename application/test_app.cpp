@@ -6,8 +6,13 @@
 #include <system/memory/StackBalancer.h>
 #include <system/memory/stack_relocate.h>
 
+#include <system/memory/RelocationSafePointer.h>
+#include <system/memory/new.h>
+
+RelocationSafePointer<uint64_t> ptr;
+
 // #define HINTING
-#define MANUAL_BALANCING
+// #define MANUAL_BALANCING
 
 void quick_sort_f(uint64_t *begin, uint64_t *end);
 void quick_sort_b(uint64_t *begin, uint64_t *end);
@@ -17,8 +22,14 @@ uint64_t bss_filler[2048];
 
 uint64_t sort_buffer[8000];
 
+#ifdef MANUAL_BALANCING
+uint64_t reloc_count = 0;
+#endif
+
 void app_init() {
     unsigned long sort_size = 5000;
+    uint64_t test_data = 0x4242;
+
     log("Starting to sort " << dec << sort_size << " numbers");
 
     // quick_sort_f(random_number, random_number + sort_size);
@@ -31,8 +42,16 @@ void app_init() {
 #ifdef MANUAL_BALANCING
             if (x % 450 == 0) {
                 relocate_stack();
+                reloc_count++;
             }
 #endif
+            if (x == 900) {
+                ptr = RelocationSafePointer<uint64_t>(&test_data);
+            }
+            if (x % 450 == 0) {
+                uint64_t value = *ptr;
+                log_info("Value in RSafe pointer is " << hex << value);
+            }
             sort_buffer[x] = random_number[x];
         }
         quick_sort_f(sort_buffer, sort_buffer + sort_size);
@@ -48,6 +67,7 @@ void app_init() {
 #ifdef MANUAL_BALANCING
             if (x % 450 == 0) {
                 relocate_stack();
+                reloc_count++;
             }
 #endif
             sort_buffer[x] = random_number[x];
@@ -62,12 +82,15 @@ void app_init() {
     // for (uint64_t i = 0; i < sort_size; i++) {
     //     log(random_number[i]);
     // }
+#ifdef MANUAL_BALANCING
+    log_info("Performed " << dec << reloc_count << " relocations so");
+#endif
 
     asm volatile("svc #0");
 }
 
 #ifdef MANUAL_BALANCING
-uint64_t rec_depth;
+uint64_t rec_depth = 0;
 #endif
 
 void quick_sort_f(uint64_t *begin, uint64_t *end) {
@@ -76,11 +99,15 @@ void quick_sort_f(uint64_t *begin, uint64_t *end) {
 #endif
 #ifdef MANUAL_BALANCING
     rec_depth++;
-    if (rec_depth == 18) {
+    if (rec_depth == 11) {
         relocate_stack();
+        reloc_count++;
     }
 #endif
     if (begin + 2 >= end) {
+#ifdef MANUAL_BALANCING
+        rec_depth--;
+#endif
         return;
     }
     // log_info("Sorting");
@@ -121,11 +148,15 @@ void quick_sort_b(uint64_t *begin, uint64_t *end) {
 #endif
 #ifdef MANUAL_BALANCING
     rec_depth++;
-    if (rec_depth == 18) {
+    if (rec_depth == 11) {
         relocate_stack();
+        reloc_count++;
     }
 #endif
     if (begin + 2 >= end) {
+#ifdef MANUAL_BALANCING
+        rec_depth--;
+#endif
         return;
     }
     // log_info("Sorting");

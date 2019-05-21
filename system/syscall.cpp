@@ -24,3 +24,16 @@ void Syscall::stop_system() {
     while (1)
         ;
 }
+
+#ifdef STACK_BALANCIMG
+void Syscall::pause_relocation(uint64_t *saved_stack_base) {
+    StackBalancer::instance.paused_relocation = true;
+}
+void Syscall::resume_relocation(uint64_t *saved_stack_base) {
+    StackBalancer::instance.paused_relocation = false;
+    if (StackBalancer::instance.irq_while_paused) {
+        StackBalancer::instance.irq_while_paused = false;
+        StackBalancer::instance.trigger_on_interrupt(saved_stack_base);
+    }
+}
+#endif

@@ -134,6 +134,8 @@ bool WriteMonitor::handle_data_permission_interrupt() {
         if (write_count[fault_page_number] >= notify_threshold) {
         write_count[fault_page_number] = 0;
     } else {
+        PMC::instance.write_event_counter(0,
+                                          UINT32_MAX - MONITORING_RESOLUTION);
         return true;
     }
 

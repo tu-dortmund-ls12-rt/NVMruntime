@@ -36,6 +36,11 @@ class StackBalancer {
     bool performing_balane = false;
     bool performed_irq_version = false;
 
+   public:
+    bool paused_relocation = false;
+    bool irq_while_paused = false;
+
+   private:
     uint64_t outer_loop_balancing_ratio = 1;
     uint64_t outer_loop_cycle = 0;
 

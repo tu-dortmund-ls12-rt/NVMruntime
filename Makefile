@@ -50,6 +50,9 @@ $(BUILD_DIR)/%.o : %.S $(ALL_DEPS)
 clean:
 	@rm -R -f build m5out
 
+m5_p=.
+export M5_PATH = $(m5_p)
+
 run:
 	@echo "this is just a fake iso that gem5 needs in order to start correctly" > $(BUILD_DIR)/fake.iso
 	@echo "this is just a fake iso that gem5 needs in order to start correctly" >> $(BUILD_DIR)/fake.iso

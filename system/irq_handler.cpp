@@ -3,7 +3,7 @@
 #include <system/service/logger.h>
 #include <system/syscall.h>
 
-extern "C" void handle_irq_lowlevel_sync() {
+extern "C" void handle_irq_lowlevel_sync(uint64_t *saved_stack_base) {
     /**
      * Some synchronous exceptions might be handleable, like a permission abort
      * from the MMU
@@ -24,9 +24,21 @@ extern "C" void handle_irq_lowlevel_sync() {
     // SVC Call
     else if ((esr_el1 >> 26) == 0x15) {
         // Stop call
-        if ((esr_el1 & 0xFFFF) == 0x0) {
+        if ((esr_el1 & 0xFFFF) == 0) {
             Syscall::instance.stop_system();
         }
+#ifdef STACK_BALANCIMG
+        // Pause Relocation call
+        if ((esr_el1 & 0xFFFF) == 1) {
+            Syscall::instance.pause_relocation(saved_stack_base);
+            return;
+        }
+        // Continue Relocation call
+        if ((esr_el1 & 0xFFFF) == 2) {
+            Syscall::instance.resume_relocation(saved_stack_base);
+            return;
+        }
+#endif
     }
 
     log("Sync IRQ Occured, not handleable :(");
