@@ -7,6 +7,7 @@
 #ifdef STACK_BALANCIMG
 
 extern uint64_t __virtual_stack_end;
+extern uint64_t __virtual_stack_begin;
 extern uint64_t __current_stack_base_ptr;
 
 template <typename T>
@@ -26,44 +27,82 @@ class RelocationSafePointer {
         ptr_snapshot_relocation = 0;
     }
     RelocationSafePointer(T *ptr) {
-        syscall_delay_relocation();
+        uint64_t __shadow_stack_begin = __virtual_stack_begin - REAL_STACK_SIZE;
+        // Check if the pointer needs relocation
+        if ((uintptr_t)(ptr) >= __shadow_stack_begin &&
+            (uintptr_t)(ptr) < __virtual_stack_end) {
+            syscall_delay_relocation();
 
-        local_ptr = (uintptr_t)ptr;
-        /**
-         * Save the internal pointer against relocations by setting the upper
-         * bit to one
-         */
-        local_ptr |= (0b1UL << 63);
+            local_ptr = (uintptr_t)ptr;
+            /**
+             * Save the internal pointer against relocations by setting the
+             * upper bit to one
+             */
+            local_ptr |= (0b1UL << 63);
 
-        ptr_snapshot_relocation =
-            (__virtual_stack_end - __current_stack_base_ptr);
+            ptr_snapshot_relocation =
+                (__virtual_stack_end - __current_stack_base_ptr);
 
-        syscall_continue_relocatuion();
+            syscall_continue_relocatuion();
+        } else {
+            local_ptr = (uintptr_t)ptr;
+        }
     }
 
     T operator*() {
-        syscall_delay_relocation();
+        // Check if the pointer needs relocation
+        if (local_ptr & (0b1UL << 63)) {
+            syscall_delay_relocation();
 
-        // Restore the correct pointer
-        uintptr_t correct = local_ptr & ~(0b1UL << 63);
-        // Determine the current stack relocation
-        uint64_t current_relocation =
-            (__virtual_stack_end - __current_stack_base_ptr);
+            // Restore the correct pointer
+            uintptr_t correct = local_ptr & ~(0b1UL << 63);
+            // Determine the current stack relocation
+            uint64_t current_relocation =
+                (__virtual_stack_end - __current_stack_base_ptr);
 
-        if (current_relocation >= ptr_snapshot_relocation) {
-            correct -= (current_relocation - ptr_snapshot_relocation);
+            if (current_relocation >= ptr_snapshot_relocation) {
+                correct -= (current_relocation - ptr_snapshot_relocation);
+            } else {
+                // In this case, the relocation wrapped around
+                correct += (ptr_snapshot_relocation - current_relocation);
+            }
+
+            T copy = *((T *)(correct));
+
+            syscall_continue_relocatuion();
+
+            return copy;
         } else {
-            // In this case, the relocation wrapped around
-            correct += (ptr_snapshot_relocation - current_relocation);
+            return *((T *)(local_ptr));
         }
+    }
 
-        log_info("CR " << dec << current_relocation << " OR " << dec << ptr_snapshot_relocation);
+    T operator[](uint64_t index) {
+        // Check if the pointer needs relocation
+        if (local_ptr & (0b1UL << 63)) {
+            syscall_delay_relocation();
 
-        T copy = *((T *)(correct));
+            // Restore the correct pointer
+            uintptr_t correct = local_ptr & ~(0b1UL << 63);
+            // Determine the current stack relocation
+            uint64_t current_relocation =
+                (__virtual_stack_end - __current_stack_base_ptr);
 
-        syscall_continue_relocatuion();
+            if (current_relocation >= ptr_snapshot_relocation) {
+                correct -= (current_relocation - ptr_snapshot_relocation);
+            } else {
+                // In this case, the relocation wrapped around
+                correct += (ptr_snapshot_relocation - current_relocation);
+            }
 
-        return copy;
+            T copy = ((T *)(correct))[index];
+
+            syscall_continue_relocatuion();
+
+            return copy;
+        } else {
+            return ((T *)(local_ptr))[index];
+        }
     }
 };
 

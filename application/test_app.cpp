@@ -28,7 +28,6 @@ uint64_t reloc_count = 0;
 
 void app_init() {
     unsigned long sort_size = 5000;
-    uint64_t test_data = 0x4242;
 
     log("Starting to sort " << dec << sort_size << " numbers");
 
@@ -45,13 +44,6 @@ void app_init() {
                 reloc_count++;
             }
 #endif
-            if (x == 900) {
-                ptr = RelocationSafePointer<uint64_t>(&test_data);
-            }
-            if (x % 450 == 0) {
-                uint64_t value = *ptr;
-                log_info("Value in RSafe pointer is " << hex << value);
-            }
             sort_buffer[x] = random_number[x];
         }
         quick_sort_f(sort_buffer, sort_buffer + sort_size);
