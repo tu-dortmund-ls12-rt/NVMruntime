@@ -1,40 +1,137 @@
-#include <system/driver/math.h>
-#include <system/memory/StackBalancer.h>
-#include "data.h"
 #include "system/data/RBTree.h"
 #include "system/service/logger.h"
 
+#include <system/driver/math.h>
+#include "data.h"
+
+#include <system/memory/StackBalancer.h>
+
+#define HINTING
+
 // Some data inside BSS
-uint64_t bss_filler[2048];
+uint64_t bss_filler[1];
 
-// #define HINTING
-// #define MANUAL_BALANCING
+float system_a[RANGE][RANGE];
+float right_a[RANGE];
 
-uint64_t bitcount(uint8_t *data, uint64_t el_count);
-void do_bitcount();
+void print_system(float **system, float *right, uint64_t range);
 
-extern uint64_t __current_stack_base_ptr;
+void solve_system(float **system, float *right, uint64_t range);
 
 void app_init() {
-    for (uint64_t i = 0; i < 200; i++) do_bitcount();
+    float *system_ptr[RANGE];
+    for (uint64_t i = 0; i < RANGE; i++) {
+        system_ptr[i] = system_a[i];
+    }
+
+    // print_system(system_ptr, right, RANGE);
+
+    for (uint64_t outer_runs = 0; outer_runs < 50; outer_runs++) {
+        for (uint64_t i = 0; i < RANGE; i++) {
+            for (uint64_t j = 0; j < RANGE; j++) {
+                system_a[i][j] = system[i][j];
+            }
+            right_a[i] = right[i];
+        }
+        solve_system(system_ptr, right_a, RANGE);
+    }
+
+    // print_system(system_ptr, right, RANGE);
     asm volatile("svc #0");
 }
 
-void do_bitcount() {
-    uint64_t result = 0;
-    uint64_t el_count = 8000;
-    for (uint64_t i = 0; i < el_count; i++) {
+void substract_lines(float **system, float *right, uint64_t target,
+                     uint64_t src, float *fac, uint64_t range) {
+    float *target_line = system[target];
+    float *src_line = system[src];
+    for (uint64_t i = 0; i < range; i++) {
+        float tmp __attribute__((aligned(8))) = src_line[i];
+        tmp *= (*fac);
+        target_line[i] -= tmp;
+    }
+    float tmp __attribute__((aligned(8))) = right[src];
+    tmp *= (*fac);
+    right[target] -= tmp;
+}
+
+void swap_lines(float **system, float *right, uint64_t target, uint64_t src,
+                uint64_t range) {
+    float *target_line = system[target];
+    float *src_line = system[src];
+    for (uint64_t i = 0; i < range; i++) {
+        float acc __attribute__((aligned(8))) = target_line[i];
+        target_line[i] = src_line[i];
+        src_line[i] = acc;
+    }
+    float acc __attribute__((aligned(8))) = right[target];
+    right[target] = right[src];
+    right[src] = acc;
+}
+
+void solve_system(float **system, float *right, uint64_t range) {
+    // Outer loop over range
+    for (uint64_t range_reduce = 0; range_reduce < range; range_reduce++) {
 #ifdef HINTING
         STACK_OUTER_LOOP
 #endif
-        result += (random_number[i] & (0b1 << 0)) != 0;
-        result += (random_number[i] & (0b1 << 1)) != 0;
-        result += (random_number[i] & (0b1 << 2)) != 0;
-        result += (random_number[i] & (0b1 << 3)) != 0;
-        result += (random_number[i] & (0b1 << 4)) != 0;
-        result += (random_number[i] & (0b1 << 5)) != 0;
-        result += (random_number[i] & (0b1 << 6)) != 0;
-        result += (random_number[i] & (0b1 << 7)) != 0;
+        // First check if line can be used to reduce
+        if (system[range_reduce][range_reduce] == 0) {
+            for (uint64_t left_over = range_reduce + 1; left_over < range;
+                 left_over++) {
+                if (system[left_over][range_reduce] != 0) {
+                    swap_lines(system, right, range_reduce, left_over, range);
+                    break;
+                }
+            }
+            if (system[range_reduce][range_reduce] == 0) {
+                log_error("System is not solvable");
+                return;
+            }
+        }
+
+        // Now eliminate the current column everywhere
+        for (uint64_t left_over = range_reduce + 1; left_over < range;
+             left_over++) {
+            float reduce_fac __attribute__((aligned(8))) =
+                system[left_over][range_reduce];
+            reduce_fac /= system[range_reduce][range_reduce];
+            substract_lines(system, right, left_over, range_reduce, &reduce_fac,
+                            range);
+        }
     }
-    // log_info("Counted " << dec << result << " Bits");
+
+    // Now insert solved variables and eliminate them all
+    for (int64_t left_line = range - 1; left_line >= 0; left_line--) {
+#ifdef HINTING
+        STACK_OUTER_LOOP
+#endif
+        // Insert variables first
+        for (int64_t i = left_line + 1; i < (int64_t)range; i++) {
+            float tmp __attribute__((aligned(8))) = system[left_line][i];
+            tmp *= right[i];
+            right[left_line] -= tmp;
+            system[left_line][i] = 0;
+        }
+
+        right[left_line] /= system[left_line][left_line];
+        system[left_line][left_line] = 1;
+    }
+}
+
+void print_system(float **system, float *right, uint64_t range) {
+    log("Printing equation system:");
+    for (uint64_t y = 0; y < range; y++) {
+        for (uint64_t x = 0; x < range; x++) {
+            if (system[y][x] > 0.00001 || system[y][x] < -0.00001) {
+                if (system[y][x] == 1) {
+                } else if (system[y][x] == -1) {
+                    OutputStream::instance << "-";
+                } else {
+                    OutputStream::instance << system[y][x] << " ";
+                }
+                OutputStream::instance << "x" << dec << x << "\t";
+            }
+        }
+        OutputStream::instance << "=\t" << dec << right[y] << endl;
+    }
 }
