@@ -197,7 +197,9 @@ void StackBalancer::outer_loop_automatic() {
 #ifdef STACK_BALANCIMG
     if (outer_loop_cycle++ >= outer_loop_balancing_ratio) {
         if (performed_irq_version) {
-            outer_loop_balancing_ratio--;
+            if (outer_loop_balancing_ratio > 0) {
+                outer_loop_balancing_ratio--;
+            }
         }
 
         if (performed_since_last_irq) {

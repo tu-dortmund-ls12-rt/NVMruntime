@@ -71,9 +71,6 @@ void swap_lines(float **system, float *right, uint64_t target, uint64_t src,
 void solve_system(float **system, float *right, uint64_t range) {
     // Outer loop over range
     for (uint64_t range_reduce = 0; range_reduce < range; range_reduce++) {
-#ifdef HINTING
-        STACK_OUTER_LOOP
-#endif
         // First check if line can be used to reduce
         if (system[range_reduce][range_reduce] == 0) {
             for (uint64_t left_over = range_reduce + 1; left_over < range;
@@ -92,6 +89,9 @@ void solve_system(float **system, float *right, uint64_t range) {
         // Now eliminate the current column everywhere
         for (uint64_t left_over = range_reduce + 1; left_over < range;
              left_over++) {
+#ifdef HINTING
+            STACK_OUTER_LOOP
+#endif
             float reduce_fac __attribute__((aligned(8))) =
                 system[left_over][range_reduce];
             reduce_fac /= system[range_reduce][range_reduce];
@@ -102,11 +102,11 @@ void solve_system(float **system, float *right, uint64_t range) {
 
     // Now insert solved variables and eliminate them all
     for (int64_t left_line = range - 1; left_line >= 0; left_line--) {
-#ifdef HINTING
-        STACK_OUTER_LOOP
-#endif
         // Insert variables first
         for (int64_t i = left_line + 1; i < (int64_t)range; i++) {
+#ifdef HINTING
+            STACK_OUTER_LOOP
+#endif
             float tmp __attribute__((aligned(8))) = system[left_line][i];
             tmp *= right[i];
             right[left_line] -= tmp;
