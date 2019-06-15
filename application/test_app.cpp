@@ -1,137 +1,186 @@
-#include "system/data/RBTree.h"
-#include "system/service/logger.h"
-
-#include <system/driver/math.h>
-#include "data.h"
-
 #include <system/memory/StackBalancer.h>
+#include <system/memory/stack_relocate.h>
+#include <system/service/logger.h>
+#include "data.h"
+#include "pfor.h"
+
+#define BENCHMARK
 
 #define HINTING
+// #define SOFTONLY
 
-// Some data inside BSS
-uint64_t bss_filler[1];
-
-float system_a[RANGE][RANGE];
-float right_a[RANGE];
-
-void print_system(float **system, float *right, uint64_t range);
-
-void solve_system(float **system, float *right, uint64_t range);
+#ifndef BENCHMARK
+void simple_test();
+void compress_array();
+void decompress_and_check();
+void decompress_incremental();
+#endif
+void benchmark();
 
 void app_init() {
-    float *system_ptr[RANGE];
-    for (uint64_t i = 0; i < RANGE; i++) {
-        system_ptr[i] = system_a[i];
-    }
+    // simple_test();
+    // compress_array();
+    // decompress_and_check();
+    // decompress_incremental();
+    benchmark();
 
-    // print_system(system_ptr, right, RANGE);
-
-    for (uint64_t outer_runs = 0; outer_runs < 50; outer_runs++) {
-        for (uint64_t i = 0; i < RANGE; i++) {
-            for (uint64_t j = 0; j < RANGE; j++) {
-                system_a[i][j] = system[i][j];
-            }
-            right_a[i] = right[i];
-        }
-        solve_system(system_ptr, right_a, RANGE);
-    }
-
-    // print_system(system_ptr, right, RANGE);
     asm volatile("svc #0");
 }
 
-void substract_lines(float **system, float *right, uint64_t target,
-                     uint64_t src, float *fac, uint64_t range) {
-    float *target_line = system[target];
-    float *src_line = system[src];
-    for (uint64_t i = 0; i < range; i++) {
-        float tmp __attribute__((aligned(8))) = src_line[i];
-        tmp *= (*fac);
-        target_line[i] -= tmp;
-    }
-    float tmp __attribute__((aligned(8))) = right[src];
-    tmp *= (*fac);
-    right[target] -= tmp;
-}
+void benchmark() {
+    /**
+     * This benchmark decompresses pfor data in small packets and aggregatves
+     * over them
+     */
+    uint64_t step_size = 40;
+    uint64_t runs = 8000 / step_size;
+    uint64_t compressed_size = step_size / 4;
+    uint64_t repetitions = 171;
 
-void swap_lines(float **system, float *right, uint64_t target, uint64_t src,
-                uint64_t range) {
-    float *target_line = system[target];
-    float *src_line = system[src];
-    for (uint64_t i = 0; i < range; i++) {
-        float acc __attribute__((aligned(8))) = target_line[i];
-        target_line[i] = src_line[i];
-        src_line[i] = acc;
-    }
-    float acc __attribute__((aligned(8))) = right[target];
-    right[target] = right[src];
-    right[src] = acc;
-}
+    uint32_t __attribute__((aligned(8))) overall_sum = 0;
 
-void solve_system(float **system, float *right, uint64_t range) {
-    // Outer loop over range
-    for (uint64_t range_reduce = 0; range_reduce < range; range_reduce++) {
-        // First check if line can be used to reduce
-        if (system[range_reduce][range_reduce] == 0) {
-            for (uint64_t left_over = range_reduce + 1; left_over < range;
-                 left_over++) {
-                if (system[left_over][range_reduce] != 0) {
-                    swap_lines(system, right, range_reduce, left_over, range);
-                    break;
-                }
-            }
-            if (system[range_reduce][range_reduce] == 0) {
-                log_error("System is not solvable");
-                return;
-            }
-        }
-
-        // Now eliminate the current column everywhere
-        for (uint64_t left_over = range_reduce + 1; left_over < range;
-             left_over++) {
+    for (uint64_t rep = 0; rep < repetitions; rep++) {
+        uint64_t next_exception = pfor_d_first_exception;
+        uint64_t exception_offset = 0;
+        for (uint64_t i = 0; i < runs; i++) {
 #ifdef HINTING
             STACK_OUTER_LOOP
 #endif
-            float reduce_fac __attribute__((aligned(8))) =
-                system[left_over][range_reduce];
-            reduce_fac /= system[range_reduce][range_reduce];
-            substract_lines(system, right, left_over, range_reduce, &reduce_fac,
-                            range);
-        }
-    }
+            uint64_t uncompressed[step_size];
+            uint64_t number_exceptions = 0;
+            next_exception = pfor_uncompress(
+                pfor_d_compressed + (i * compressed_size), step_size,
+                pfor_d_exception_list + exception_offset, next_exception,
+                uncompressed, &number_exceptions);
+            exception_offset += number_exceptions;
 
-    // Now insert solved variables and eliminate them all
-    for (int64_t left_line = range - 1; left_line >= 0; left_line--) {
-        // Insert variables first
-        for (int64_t i = left_line + 1; i < (int64_t)range; i++) {
-#ifdef HINTING
-            STACK_OUTER_LOOP
-#endif
-            float tmp __attribute__((aligned(8))) = system[left_line][i];
-            tmp *= right[i];
-            right[left_line] -= tmp;
-            system[left_line][i] = 0;
-        }
-
-        right[left_line] /= system[left_line][left_line];
-        system[left_line][left_line] = 1;
-    }
-}
-
-void print_system(float **system, float *right, uint64_t range) {
-    log("Printing equation system:");
-    for (uint64_t y = 0; y < range; y++) {
-        for (uint64_t x = 0; x < range; x++) {
-            if (system[y][x] > 0.00001 || system[y][x] < -0.00001) {
-                if (system[y][x] == 1) {
-                } else if (system[y][x] == -1) {
-                    OutputStream::instance << "-";
-                } else {
-                    OutputStream::instance << system[y][x] << " ";
+            // Loop over uncompressed data and aggregate
+            for (uint64_t x = 0; x < step_size; x++) {
+                if (uncompressed[x] != random_number[(step_size * i) + x]) {
+                    log_error("Found mismatch");
+                    while (1)
+                        ;
                 }
-                OutputStream::instance << "x" << dec << x << "\t";
+                overall_sum += uncompressed[x];
             }
         }
-        OutputStream::instance << "=\t" << dec << right[y] << endl;
+    }
+
+    // log_info("Uncompressed sum is " << dec << overall_sum);
+}
+
+#ifndef BENCHMARK
+uint64_t full_compress_compressed[2000];
+uint64_t full_compress_exception_list[8000];
+void compress_array() {
+    log_info("Beginning PFOR Compression");
+    log_info("Compressing 8000 Numbers:");
+
+    uint64_t first_exception;
+    uint64_t exception_count;
+
+    pfor_compress(random_number, 8000, full_compress_compressed,
+                  full_compress_exception_list, &exception_count,
+                  &first_exception);
+
+    log_info("Compressed entire array: " << dec << exception_count
+                                         << " Exceptions, first at " << dec
+                                         << first_exception);
+
+    OutputStream::instance << "\n";
+    for (uint64_t i = 0; i < 2000; i++) {
+        OutputStream::instance << dec << full_compress_compressed[i] << ",\n";
+    }
+    OutputStream::instance << "\n\n";
+    for (uint64_t i = 0; i < exception_count; i++) {
+        OutputStream::instance << dec << full_compress_exception_list[i]
+                               << ",\n";
     }
 }
+
+uint64_t full_decompress_uncompressed[8000];
+
+void decompress_and_check() {
+    log_info("Beginning PFOR Compression");
+    log_info("Decompressing 8000 Numbers:");
+
+    pfor_uncompress(pfor_d_compressed, 8000, pfor_d_exception_list,
+                    pfor_d_first_exception, full_decompress_uncompressed);
+
+    for (uint64_t i = 0; i < 8000; i++) {
+        if (full_decompress_uncompressed[i] != random_number[i]) {
+            log_info("Found mismatch at " << dec << i << ": " << dec
+                                          << full_decompress_uncompressed[i]
+                                          << " != " << dec << random_number[i]);
+        }
+    }
+}
+
+void decompress_incremental() {
+    log_info("Beginning PFOR Compression");
+    log_info("Decompressing 8000 Numbers incremental (40 each):");
+    uint64_t next_exception = pfor_d_first_exception;
+    uint64_t exception_offset = 0;
+    for (uint64_t i = 0; i < 200; i++) {
+        uint64_t uncompressed[40];
+        uint64_t number_exceptions = 0;
+        next_exception =
+            pfor_uncompress(pfor_d_compressed + (i * 10), 40,
+                            pfor_d_exception_list + exception_offset,
+                            next_exception, uncompressed, &number_exceptions);
+        exception_offset += number_exceptions;
+
+        for (uint64_t x = 0; x < 40; x++) {
+            if (uncompressed[x] != random_number[(i * 40) + x]) {
+                log_info("Found mismatch at " << dec << ((i * 40) + x) << ": "
+                                              << dec << uncompressed[x]
+                                              << " != " << dec
+                                              << random_number[(i * 40) + x]);
+            }
+        }
+    }
+    log_info("No errors found");
+}
+
+void simple_test() {
+    log_info("Beginning PFOR Compression");
+    log_info("Compressing 16 Numbers:");
+    for (uint64_t i = 0; i < 16; i++) {
+        log_info(dec << random_number[i]);
+    }
+
+    uint64_t compressed[4];
+    uint64_t exception_list[16];
+    uint64_t first_exception;
+    uint64_t exception_count;
+
+    pfor_compress(random_number, 16, compressed, exception_list,
+                  &exception_count, &first_exception);
+
+    log_info("Compressed:");
+    for (uint64_t i = 0; i < 4; i++) {
+        log_info("[" << dec << i << "]:0 " << dec
+                     << (((compressed[i]) & (255 << 0)) >> 0));
+        log_info("[" << dec << i << "]:1 " << dec
+                     << (((compressed[i]) & (255 << 8)) >> 8));
+        log_info("[" << dec << i << "]:2 " << dec
+                     << (((compressed[i]) & (255 << 16)) >> 16));
+        log_info("[" << dec << i << "]:3 " << dec
+                     << (((compressed[i]) & (255 << 24)) >> 24));
+    }
+    log_info("Exceptions:");
+    for (uint64_t i = 0; i < exception_count; i++) {
+        log_info("[" << dec << i << "] " << dec << exception_list[i]);
+    }
+    log_info("First exception at " << dec << first_exception);
+
+    log_info("\n=====Decompressing=====\n");
+    uint64_t decompressed[10];
+    pfor_uncompress(compressed, 16, exception_list, first_exception,
+                    decompressed);
+
+    for (uint64_t i = 0; i < 16; i++) {
+        log_info("[" << dec << i << "] " << dec << decompressed[i]);
+    }
+}
+#endif
