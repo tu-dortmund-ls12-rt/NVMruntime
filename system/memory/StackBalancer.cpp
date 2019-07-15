@@ -78,8 +78,8 @@ void StackBalancer::trigger_on_interrupt(uint64_t *saved_stack_base) {
     } else {
         performed_since_last_irq = false;
     }
-    log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
-    log_info("[RACR]: " << dec << recursion_depth_trigger);
+    // log_info("[OLBR]: " << dec << outer_loop_balancing_ratio);
+    // log_info("[RACR]: " << dec << recursion_depth_trigger);
     // extern uint64_t __current_stack_base_ptr;
     // log_info("[BBPTR]: " << hex << __current_stack_base_ptr);
 }

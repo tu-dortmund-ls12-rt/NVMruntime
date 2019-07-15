@@ -60,23 +60,40 @@ class RelocationSafePointer {
         return Intermediate_Pointer_Setter<T>(*this, index);
     }
 
-    T* operator&(){
-        return (T *)local_ptr;
-    }
+    T *operator&() { return (T *)local_ptr; }
 
-    RelocationSafePointer<T> operator+(uint64_t offset){
+    RelocationSafePointer<T> operator+(uint64_t offset) {
         RelocationSafePointer<T> ret;
-        ret.local_ptr=local_ptr+(sizeof(T)*offset);
-        ret.ptr_snapshot_relocation=ptr_snapshot_relocation;
+        ret.local_ptr = local_ptr + (sizeof(T) * offset);
+        ret.ptr_snapshot_relocation = ptr_snapshot_relocation;
         return ret;
     }
 
-    RelocationSafePointer<T> operator-(uint64_t offset){
+    RelocationSafePointer<T> operator+=(uint64_t offset) {
+        return *this + offset;
+    }
+    RelocationSafePointer<T> operator++(int) {
+        RelocationSafePointer<T> copy = *this;
+        *this += 1;
+        return copy;
+    }
+    RelocationSafePointer<T> operator++() { return *this + 1; }
+
+    RelocationSafePointer<T> operator-(uint64_t offset) {
         RelocationSafePointer<T> ret;
-        ret.local_ptr=local_ptr-(sizeof(T)*offset);
-        ret.ptr_snapshot_relocation=ptr_snapshot_relocation;
+        ret.local_ptr = local_ptr - (sizeof(T) * offset);
+        ret.ptr_snapshot_relocation = ptr_snapshot_relocation;
         return ret;
     }
+    RelocationSafePointer<T> operator-=(uint64_t offset) {
+        return *this - offset;
+    }
+    RelocationSafePointer<T> operator--(int) {
+        RelocationSafePointer<T> copy = *this;
+        *this -= 1;
+        return copy;
+    }
+    RelocationSafePointer<T> operator--() { return *this - 1; }
 
     T get_value(uint64_t index) {
         // Check if the pointer needs relocation

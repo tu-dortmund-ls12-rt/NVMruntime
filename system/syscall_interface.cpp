@@ -3,6 +3,18 @@
 void syscall_exit() { asm volatile("svc #0"); }
 
 #ifdef STACK_BALANCIMG
-void syscall_delay_relocation() { asm volatile("svc #1"); }
-void syscall_continue_relocatuion() { asm volatile("svc #2"); }
+
+#include <system/memory/StackBalancer.h>
+
+void syscall_delay_relocation() {
+    // asm volatile("svc #1");
+    StackBalancer::instance.paused_relocation = true;
+}
+void syscall_continue_relocatuion() {
+    if (StackBalancer::instance.irq_while_paused) {
+        asm volatile("svc #2");
+    } else {
+        StackBalancer::instance.paused_relocation = false;
+    }
+}
 #endif

@@ -88,6 +88,12 @@ SECTIONS
     }
     __NVMSYMBOL_BOOTSTACK_END =.;
 
+    __NVMSYMBOL_BENCHDATA_BEGIN =.;
+    .ro_bench_dat :{
+        *(ro_bench_dat)
+    }
+    __NVMSYMBOL_BENCHDATA_END =.;
+
     . = ALIGN(0x1000);
 
     __NVMSYMBOL_SPARE_VM_PAGE_BEGIN = .;
@@ -129,13 +135,13 @@ SECTIONS
     __NVMSYMBOL__APPLICATION_DATA_BEGIN = .;
     .data : {
         *(.data)
+        *(.rodata)
     }
     __NVMSYMBOL__APPLICATION_DATA_END = .;
 
     .note : {
         *(".note.*")
         *(.eh_frame)
-        *(.rodata)
     }
 
     . += 0x8;
