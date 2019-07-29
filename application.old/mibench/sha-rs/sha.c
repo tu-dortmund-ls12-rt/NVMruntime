@@ -276,7 +276,7 @@ void sha_stream(SHA_INFO *sha_info, char *data_input) {
             }
             read_ptr++;
         }
-        StackBalancer::instance.hint_relocation();
+        // StackBalancer::instance.hint_relocation();
         sha_update(sha_info, data, i);
     }
     sha_final(sha_info);

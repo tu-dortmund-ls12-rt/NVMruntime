@@ -2,9 +2,20 @@
 #define SYSTEM_MEMORY_STACK_BALANCER
 
 #include <system/stdint.h>
+#include "stack_relocate.h"
 
 #define STACK_OUTER_LOOP StackBalancer::instance.outer_loop_automatic();
 #define STACK_RECURSIVE_FUNC RecursiveGuard __r__;
+//#define SHint StackBalancer::instance.hint_relocation();
+
+#define SHint                            \
+    if (!StackBalancer::instance.performed_since_last_irq) {     \
+        StackBalancer::instance.performing_balane = true;        \
+        StackBalancer::instance.performed_since_last_irq = true; \
+        relocate_stack();                \
+        StackBalancer::instance.relocation_count_syn++;          \
+        StackBalancer::instance.performing_balane = false;       \
+    }
 
 class RecursiveGuard;
 
@@ -29,6 +40,7 @@ class StackBalancer {
    private:
     void perform_irq_relocation(uint64_t *saved_stack_base);
 
+   public:
     uint64_t relocation_count_syn = 0;
     uint64_t relocation_coint_irq = 0;
 

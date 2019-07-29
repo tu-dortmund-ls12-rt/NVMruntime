@@ -1,7 +1,6 @@
 #include "StackBalancer.h"
 #include <system/service/logger.h>
 #include "MMU.h"
-#include "stack_relocate.h"
 
 StackBalancer StackBalancer::instance;
 

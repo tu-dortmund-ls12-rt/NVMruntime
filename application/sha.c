@@ -268,6 +268,7 @@ void sha_stream(SHA_INFO *sha_info, char *data_input) {
     while (*read_ptr != 0) {
         i = 0;
         for (unsigned long x = 0; x < BLOCK_SIZE; x++) {
+            SHint
             if (*read_ptr != 0) {
                 data[x] = *read_ptr;
                 i++;
@@ -276,7 +277,7 @@ void sha_stream(SHA_INFO *sha_info, char *data_input) {
             }
             read_ptr++;
         }
-        StackBalancer::instance.hint_relocation();
+        SHint
         sha_update(sha_info, data, i);
     }
     sha_final(sha_info);
