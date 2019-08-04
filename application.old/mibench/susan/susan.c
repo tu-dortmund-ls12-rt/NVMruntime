@@ -126,45 +126,6 @@ void get_image(char *input_stream, unsigned char **in, unsigned long *x_size,
     *in = (unsigned char *)input_stream;
 }
 
-void write_integer(char *&input_stream, unsigned long number) {
-    unsigned long num_buf[64];
-    unsigned long *buf_ptr = num_buf + 63;
-    *buf_ptr = '0';
-    bool is_zero = (number == 0);
-    while (number != 0) {
-        *(buf_ptr--) = (number % 10) + '0';
-        number /= 10;
-    }
-    if (!is_zero) {
-        buf_ptr++;
-    }
-
-    for (; buf_ptr <= (num_buf + 63); buf_ptr++) {
-        *(input_stream++) = *buf_ptr;
-    }
-}
-
-void put_image(char *input_stream, char *in, unsigned long x_size,
-               unsigned long y_size) {
-    *(input_stream++) = 'P';
-    *(input_stream++) = '5';
-    *(input_stream++) = '\n';
-
-    write_integer(input_stream, x_size);
-    *(input_stream++) = ' ';
-    write_integer(input_stream, y_size);
-    *(input_stream++) = '\n';
-
-    *(input_stream++) = '2';
-    *(input_stream++) = '5';
-    *(input_stream++) = '5';
-    *(input_stream++) = '\n';
-
-    for (unsigned long i = 0; i < (x_size * y_size); i++) {
-        *(input_stream++) = *(in++);
-    }
-}
-
 void int_to_uchar(unsigned long *r, unsigned char *in, unsigned long size) {
     unsigned long i, max_r = r[0], min_r = r[0];
 
@@ -1459,6 +1420,7 @@ void app_init() {
 
     log_info("Principle");
     susan_principle(in, r, bp, max_no_edges, x_size, y_size);
+    log_info("Into to Char");
     int_to_uchar(r, in, x_size * y_size);
 
     mid = (uchar *)malloc(x_size * y_size);
@@ -1467,8 +1429,7 @@ void app_init() {
     log_info("Edges");
     susan_edges(in, r, mid, bp, max_no_edges, x_size, y_size);
 
-    log_info("Putting");
-    put_image(test_output, (char *)in, x_size, y_size);
+    asm volatile("svc #0");
 }
 
 /* }}} */

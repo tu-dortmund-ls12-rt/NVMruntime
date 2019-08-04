@@ -5,6 +5,7 @@
 #define REAL_STACK_SIZE 0x8000
 #define STACK_SIZE (REAL_STACK_SIZE*2)
 
+// #define MONITOR_CAPACITY 5000
 #define MONITOR_CAPACITY 256
 #define SYSTEM_OFFSET 0x80000000
 #define MONITORING_RESOLUTION 1000
@@ -12,12 +13,12 @@
 #define REBALANCE_THRESHOLD 1
 
 // #define DO_REBALANCING
-// #define DO_MONITORING
+#define DO_MONITORING
 
 // #define RESPECT_PROCESS_VARIATION
 // #define PRE_AGED_MEMORY
 
-// #define STACK_BALANCIMG
+#define STACK_BALANCIMG
 //The stack pointer must be aligned on 16 bytes
 // #define RELOCATION_STEP 0x20
 #define RELOCATION_STEP 0x40
