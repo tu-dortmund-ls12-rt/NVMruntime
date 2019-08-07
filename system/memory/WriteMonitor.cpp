@@ -94,6 +94,7 @@ void WriteMonitor::set_all_observed_pages(bool generate_interrupt_on_write) {
 }
 
 bool WriteMonitor::handle_data_permission_interrupt() {
+    PMC::instance.enable_overflow_interrupt(0, false);
     // Read the fault address
     uint64_t far_el1 = 0;
     asm volatile("mrs %0, far_el1" : "=r"(far_el1));
@@ -136,10 +137,10 @@ bool WriteMonitor::handle_data_permission_interrupt() {
     } else {
         PMC::instance.write_event_counter(0,
                                           UINT32_MAX - MONITORING_RESOLUTION);
+        PMC::instance.enable_overflow_interrupt(0, true);
         return true;
     }
 
-    PMC::instance.enable_overflow_interrupt(0, false);
     PageBalancer::instance.trigger_rebalance((void *)(fault_page & ~0xFFF));
     PMC::instance.write_event_counter(0, UINT32_MAX - MONITORING_RESOLUTION);
     PMC::instance.enable_overflow_interrupt(0, true);
