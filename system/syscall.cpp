@@ -2,7 +2,9 @@
 #include "memory/PageBalancer.h"
 #include "memory/StackBalancer.h"
 #include "memory/WriteMonitor.h"
+#include "psci.h"
 #include "system/service/logger.h"
+#include <system/m5/m5ops.h>
 
 Syscall Syscall::instance;
 
@@ -23,6 +25,13 @@ void Syscall::stop_system() {
     log("ByeBye");
     while (1)
         ;
+}
+
+extern "C" void m5_exit(uint64_t ns_delay);
+
+void Syscall::shutdown_system() {
+    log_info("Calling m5_exit");
+    m5_exit(0);
 }
 
 #ifdef STACK_BALANCIMG

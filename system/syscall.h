@@ -8,6 +8,7 @@ class Syscall {
     static Syscall instance;
 
     void stop_system();
+    void shutdown_system();
 
 #ifdef STACK_BALANCIMG
     void pause_relocation(uint64_t *saved_stack_base);

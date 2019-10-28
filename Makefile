@@ -1,6 +1,6 @@
 CROSS_COMPILER=aarch64-linux-gnu
-GEM5_PATH=/home/christian/repos/MA-NVM/gem5
-NVMAIN_PATH=/home/christian/repos/MA-NVM/nvmain
+GEM5_PATH=/home/christian/repos/nvm-oma/gem5
+NVMAIN_PATH=/home/christian/repos/nvm-oma/nvmain
 
 CCFLAGS=-Wall -Werror -nostdlib -I. -mstrict-align -include system/config.h -fno-exceptions
 LDFLAGS=-T system/ldscript.ld -nostdlib -static -nostartfiles -N -mstrict-align

@@ -37,6 +37,8 @@ SECTIONS
         build/system/driver/math.o(.text)
 
         build/system/memory/stack_relocate.o(.text)
+
+        build/system/m5/m5op_arm_A64.o(.text)
     }
     __INTERNAL_CODE_END = .;
     
@@ -65,6 +67,9 @@ SECTIONS
         build/system/memory/PageBalancer.o(.bss)
         build/system/memory/StackBalancer.o(.data)
         build/system/memory/StackBalancer.o(.bss)
+
+        build/system/m5/m5op_arm_A64.o(.data)
+        build/system/m5/m5op_arm_A64.o(.bss)
 
         build/system/interrupt.o(*)
         build/system/irq_handler.o(*)

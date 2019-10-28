@@ -26,6 +26,11 @@ extern "C" void handle_irq_lowlevel_sync(uint64_t *saved_stack_base) {
         // Stop call
         if ((esr_el1 & 0xFFFF) == 0) {
             Syscall::instance.stop_system();
+            return;
+        }
+        if ((esr_el1 & 0xFFFF) == 10) {
+            Syscall::instance.shutdown_system();
+            return;
         }
 #ifdef STACK_BALANCIMG
         // Pause Relocation call

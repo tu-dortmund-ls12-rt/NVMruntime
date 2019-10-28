@@ -2,6 +2,8 @@
 
 void syscall_exit() { asm volatile("svc #0"); }
 
+void syscall_shutdown() { asm volatile("svc #10"); }
+
 #ifdef STACK_BALANCIMG
 
 #include <system/memory/StackBalancer.h>
